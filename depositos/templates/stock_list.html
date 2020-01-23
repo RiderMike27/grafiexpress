@@ -1,0 +1,174 @@
+{% extends 'admin/base_site.html' %}
+{% load humanize %}
+
+{% load i18n admin_static %}
+{% load my_tags %}
+{% load deposito_tags %}
+
+
+{% block extrastyle %}
+    <link rel="stylesheet" href="{% static 'chosen/chosen.css' %}">
+    <link rel="stylesheet" href="{% static 'chosen/docsupport/prism.css' %}">
+{% endblock %}
+
+{% block extrajs %}
+    <script src="{% static 'chosen/chosen.jquery.js' %}"></script>
+    <script src="{% static 'chosen/docsupport/prism.js' %}"></script>
+
+    <script type="text/javascript">
+        $(".chosen-select").chosen({
+            disable_search_threshold: 0,
+            no_results_text: "Sin resultados..",
+            width: "300px",
+            allow_single_deselect: true
+        });
+        $('.chosen-select').trigger('chosen:updated');
+    </script>
+{% endblock %}
+
+{% block content %}
+    <form class="form" method="get">
+        <h1>Stock de materiales por depositos</h1>
+        <center>
+            <dl>
+                <table class="table-filter table table-bordered table-stripped">
+                    <tbody>
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Buscar:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="search-query" placeholder="Nombre o codigo.." name="q" value="{{ q }}">
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Categoria:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select class="chosen-select" data-placeholder="Seleccione un categoria.." name="categoria_id" value="{{ categoria_id }}" onchange="this.form.submit();">
+                                <option value=""></option>
+                                {% for categoria in categorias %}
+                                    <option {% if categoria.pk == categoria_id %} selected {% endif %} value="{{ categoria.id }}">{{ categoria }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+
+                        <th style="border-top :3px solid white; border-right :3px solid white; border-bottom :3px solid white;">
+                            <a class="btn btn-info" href="/admin/depositos/stock" title="Limpiar Filtros">
+                                <i class="fa fa-undo"></i>
+                            </a>
+                            <input type="submit" value="Buscar" class="btn btn-success" hidden="hidden" style="display: none">
+                        </th>
+                    </tr>
+                    </tbody>
+                </table>
+            </dl>
+        </center>
+
+        <div id="next_button" align="right">
+
+            <button onclick="this.form.submit();" class="btn btn-success" name="excel" value="excel" type="submit" title="Exportar a Excel">
+                <i class="fa fa-file-excel-o"></i>
+            </button>
+
+        </div>
+    </form>
+
+
+    <br/>
+
+    <div align="center">
+        <table id="result_list" class="table table-striped table-filter">
+            <thead>
+            <tr>
+                <th>Codigo</th>
+                <th>Material</th>
+                <th>Resma</th>
+                <th>Gramaje</th>
+                <th>Categoria</th>
+                <th>Stock actual</th>
+
+                {% for deposito in depositos %} 
+                <th>stock dep. {{ deposito }}</th>
+                {% endfor %}
+
+                <th>Costo actual</th>
+
+
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for material in object_list %}
+                <tr>
+                    <td>{{ material.codigo }}</td>
+                    <td>{{ material.descripcion}}</td>
+                    <td>{% if material.resma != None %}{{ material.resma }} {% endif %}</td>
+                    <td>{% if material.gramaje != None %}{{ material.gramaje }} {% endif %}</td>
+                    <td>{{ material.categoria }}</td>
+                    <td>{{ material.stock_actual|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+
+                    {% for deposito in depositos %}
+                    {% get_stock_material_deposito material.id deposito.id as stock %}
+                    <td> {{ stock|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }} </td>
+                    {% endfor %}
+
+                    <td>{{ material.costo_actual|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+
+
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+        <table class="table">
+            <td>
+                <center>
+                    <ul class="pagination pagination-sm">
+                        {% if page_obj.has_previous %}
+                            <li class="previous">
+                                <a href="/admin/depositos/stock/?page={{ page_obj.previous_page_number }}&q={{ q }}&categoria_id={{ categoria_id }}">
+                                    <span aria-hidden="true">&larr;</span> Primera
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="/admin/depositos/stock/?page={{ page_obj.previous_page_number }}&q={{ q }}&categoria_id={{ categoria_id }}">
+                                    Anterior
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for page in page_obj.paginator.page_range|paginator_delimiter:page_obj.number %}
+                            <li>
+                                <a {% if page == page_obj.number %} class="active" style="background-color:#DD4814;color:white;" {% endif %} href="/admin/depositos/stock/?page={{ page }}&q={{ q }}&categoria_id={{ categoria_id }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li>
+                                <a href="/admin/depositos/stock/?page={{ page_obj.next_page_number }}&q={{ q }}&categoria_id={{ categoria_id }}">
+                                    Siguiente
+                                </a>
+                            </li>
+
+                            <li class="next">
+                                <a href="/admin/depositos/stock/?page={{ page_obj.paginator.num_pages}}&q={{ q }}&categoria_id={{ categoria_id }}">
+                                    &Uacute;ltima <span aria-hidden="true">&rarr;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                    </ul>
+                </center>
+            </td>
+            <th>
+                Pag. {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}
+            </th>
+        </table>
+    {% endif %}
+{% endblock %}

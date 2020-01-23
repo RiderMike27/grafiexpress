@@ -1,0 +1,59 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block content %}
+    <h1>Factura Nro. {{ object.get_numero_de_factura     }}</h1>
+
+    <form method="get">
+        <strong>Buscar Remisiones:</strong> <br>
+        <table>
+            <td>
+                {{ form.nombre }}
+                {{ form.nombre.errors }}
+            </td>
+            <td style="width: 20px"></td>
+            <td>
+                {{ form.numero }}
+                {{ form.numero.errors }}
+            </td>
+            <td style="width: 20px"></td>
+            <td>
+                <button type="submit"  class="btn btn-primary"> <i class="fa fa-search"></i> Buscar</button>
+
+            </td>
+        </table>
+    </form>
+    <br>
+    {% if not remisiones %}
+
+        No existen REMISIONES asociadas a esta factura.
+    {% endif %}
+    {% for remision in remisiones %}
+
+        <ul style="list-style-type:none">
+            <li><h3><a href="/admin/ventas/remision/{{ remision.pk }}/detail">{{ remision }}</a></h3>
+                {#           {{ remision.detallederemision_set.all }}#}
+                {% if remision.detallederemision_set.all %}
+                    <ul>
+                        {% for detalle in remision.detallederemision_set.all %}
+                            <li> <a href="/admin/produccion/ordendetrabajo/{{ detalle.orden_de_trabajo.pk }}/detail">
+                                {{ detalle.orden_de_trabajo }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    </ul>
+                {% endif %}
+        </li>
+        </ul>
+
+
+    {% endfor %}
+    <br>
+    <br>
+
+
+
+
+    <button type="button" class="btn btn-primary" onclick="window.history.back(); return false;">Volver</button>
+
+{% endblock %}

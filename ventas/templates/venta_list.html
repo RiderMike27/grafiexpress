@@ -1,0 +1,331 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n admin_static %}
+{% load my_tags %}
+{% load humanize %}
+
+{% block extrastyle %}
+    <link rel="stylesheet" href="{% static 'chosen/chosen.css' %}">
+    <link rel="stylesheet" href="{% static 'chosen/docsupport/prism.css' %}">
+{% endblock %}
+
+{% block extrajs %}
+    <script src="{% static 'chosen/chosen.jquery.js' %}"></script>
+    <script src="{% static 'chosen/docsupport/prism.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.maskedinput.min.js' %}"></script>
+    <script type="text/javascript">
+        $(".chosen-select").chosen({
+            disable_search_threshold: 0,
+            no_results_text: "Sin resultados..",
+            width: "300px",
+            allow_single_deselect: true
+        });
+        $('.chosen-select').trigger('chosen:updated');
+    </script>
+    <script>
+        jQuery(function($) {
+            $(".date").mask("99/99/9999",{placeholder:"dd/mm/aaaa"});
+        });  
+    </script>
+{% endblock %}
+
+{% block content %}
+    <form class="form" method="get">
+        <h1>Lista de ventas</h1>
+        <center>
+            <dl>
+                <table class="table-filter table table-bordered table-stripped">
+                    <tbody>
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Numero de Factura:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text"   id="id_numero_de_factura" class="search-query" placeholder="Numero de Factura.." name="q" value="{{ q }}">
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> OT:</strong>   
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input id="id_numero_de_remision" type="text" class="search-query" placeholder="Orden de trabajo.." name="orden_de_trabajo" value="{{ orden_de_trabajo }}">
+                        </td>
+
+                    </tr>
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Cliente:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select class="chosen-select" data-placeholder="Seleccione un cliente.." name="cliente_id" value="{{ cliente_id }}" onchange="this.form.submit();">
+                                <option value=""></option>
+                                {% for cliente in clientes %}
+                                    <option {% if cliente.pk == cliente_id %} selected {% endif %} value="{{ cliente.id }}">{{ cliente }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Empresa:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select class="chosen-select" data-placeholder="Seleccione una empresa.." name="empresa_id" value="{{ empresa_id }}" onchange="this.form.submit();">
+                                <option value=""></option>
+                                {% for empresa in empresas %}
+                                    <option {% if empresa.pk == empresa_id %} selected {% endif %} value="{{ empresa.id }}">{{ empresa.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <th style="vertical-align:middle">
+                            <strong> Fecha de emision desde:</strong>   
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_de_emision_desde" value="{{ fecha_de_emision_desde }}">
+                        </td>
+
+
+                        <th style="vertical-align:middle">
+                            <strong> Fecha de emision hasta:</strong>   
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_de_emision_hasta" value="{{ fecha_de_emision_hasta }}">
+                        </td>
+                    </tr>
+
+                    <tr>
+
+                        <th style="vertical-align:middle">
+                            <strong> Fecha de vencimiento desde:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_de_vencimiento_desde" value="{{ fecha_de_vencimiento_desde }}">
+                        </td>
+
+
+                        <th style="vertical-align:middle">
+                            <strong> Fecha de vencimiento hasta:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_de_vencimiento_hasta" value="{{ fecha_de_vencimiento_hasta }}">
+                        </td>
+                    </tr>
+
+
+                    <tr>
+
+                        <th style="vertical-align:middle">
+                            <strong> Estado:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select name="estado" value="{{ estado }}" onchange="this.form.submit();">
+                                <option {% if 'TODOS' in estado %} selected {% endif %} value="TODOS">TODOS</option>
+                                <option {% if 'NN' in estado %} selected {% endif %} value="NN">TODOS (sin anulados)</option>
+                                <option {% if 'P' in estado %} selected {% endif %} value="P">SIN IMPRIMIR</option>
+                                <option {% if 'C' in estado %} selected {% endif %} value="C">IMPRESOS</option>
+                                <option {% if 'A' in estado %} selected {% endif %} value="A">ANULADOS</option>
+                            </select>
+                        </td>
+
+                        {% if perms.ventas.add_venta %}
+                        <th style="vertical-align:middle">
+                            <strong> Vendedor:</strong> 
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select class="chosen-select" data-placeholder="Seleccione un vendedor.." name="vendedor_id" value="{{ vendedor_id }}" onchange="this.form.submit();">
+                                <option value=""></option>
+                                {% for vendedor in vendedores %}
+                                <option {% if vendedor.pk == vendedor_id %} selected {% endif %} value="{{ vendedor.id }}">{{ vendedor }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        {% endif %}
+
+
+                        <th style="border-top :3px solid white; border-right :3px solid white; border-bottom :3px solid white;">
+                            <a class="btn btn-info" href="/admin/ventas/venta/" title="Limpiar Filtros">
+                                <i class="fa fa-undo"></i>
+                            </a>
+                            <input type="submit" value="Buscar" class="btn btn-success" hidden="hidden" style="display: none">
+                        </th>
+                    </tr>
+                    </tbody>
+                </table>
+            </dl>
+        </center>
+
+        <div id="next_button" align="right">
+
+
+            <button onclick="this.form.submit();" class="btn btn-success" name="excel" value="excel" type="submit" title="Exportar a Excel">
+                <i class="fa fa-file-excel-o"></i>
+            </button>
+
+
+            {% if perms.ventas.add_venta %}
+
+            <button type="button" class="btn btn-default" onclick="location.href='/admin/ventas/ventaantiguo/add/';" title="Agregar venta antigua">
+                <span class="glyphicon glyphicon-plus"></span>
+            </button>
+
+            <button type="button" class="btn btn-primary" onclick="location.href='/admin/ventas/venta/add/';" title="Agregar venta actual">
+                <span class="glyphicon glyphicon-plus"></span>
+            </button>
+
+            {% endif %}
+
+        </div>
+    </form>
+
+    {% if request.user.is_superuser %}
+        <div align="left">
+            <h2>Total General = {{ total_general | floatformat:"0" | intcomma | default_if_none:"&nbsp;"}}</h2>
+        </div>
+    {% endif %}
+
+    <div align="center">
+        <table id="result_list" class="table table-striped table-filter">
+            <thead>
+            <tr>
+                <th>Numero</th>
+                <th>Cliente</th>
+                <th>Empresa</th>
+                <th>Fecha de emision</th>
+                <th>Fecha de vencimiento</th>
+                <th>Estado</th>
+                {% if request.user.is_superuser %}
+                    <th>Total</th>
+                {% endif %}
+                <th>Acciones</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for venta in object_list %}
+                <tr>
+                    <td>{{ venta.get_numero_de_factura }}</td>
+                    <td>{{ venta.cliente }}</td>
+                    <td>{{ venta.empresa }}</td>
+                    <td>{{ venta.fecha_de_emision }}</td>
+                    <td>{{ venta.fecha_de_vencimiento }}</td>
+                    <td>{{ venta.get_estado_display }}</td>
+                    {% if request.user.is_superuser %}
+                        <td>{{ venta.total | floatformat:"0" | intcomma | default_if_none:"&nbsp;" }}</td>
+                    {% endif %}
+                    <td>
+                        <!-- si tiene permiso de edicion y estado es PENDIENTE puede cambiar -->
+                        {% if perms.ventas.change_venta and venta.estado == 'P' %}
+                            <button type="button" class="btn btn-warning btn-xs" onclick="location.href='/admin/ventas/venta/{{ venta.id }}/';" title="Editar">
+                                <i class="fa fa-pencil"></i>
+                            </button>
+                        {% endif %}
+
+                        <!-- si tiene permiso de imprimir y estado es PENDIENTE puede imprimir la factura -->
+                        {% if perms.ventas.print_venta and venta.estado == 'P' %}
+                            <button type="button" class="btn btn-success btn-xs" onclick="location.href='/admin/ventas/venta/{{ venta.id }}/print/';" title="imprimir">
+                                <i class="fa fa-print"></i>
+                            </button>
+                        {% endif %}
+
+                        <!-- si tiene permiso de imprimir y estado es CONFIRMADO puede imprimir la factura -->
+                        {% if perms.ventas.print_venta and venta.estado == 'C' %}
+                            <button type="button" class="btn btn-success btn-xs" onclick="location.href='/admin/ventas/venta/{{ venta.id }}/print/';" title="volver a imprimir">
+                                <i class="fa fa-print"></i>
+                            </button>
+                        {% endif %}
+
+
+                        <!-- si tiene permiso de anular y estado es CONFIRMADO puede anular la factura -->
+                        {% if perms.ventas.cancel_venta and venta.estado == 'C' %}
+                            <button type="button" class="btn btn-warning btn-xs" onclick="location.href='/admin/ventas/venta/{{ venta.id }}/cancel/';" title="anular">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        {% endif %}
+
+                        <!-- si tiene permiso de anular y estado es ANULADO puede cancelar anular la factura -->
+                        {% if perms.ventas.cancel_venta and venta.estado == 'A' %}
+                            <button type="button" class="btn btn-default btn-xs" onclick="location.href='/admin/ventas/venta/{{ venta.id }}/revert/';" title="cancelar anulacion">
+                                <i class="fa fa-check"></i>
+                            </button>
+                        {% endif %}
+
+                        <button type="button" class="btn btn-info btn-xs" onclick="location.href='/admin/ventas/venta/{{ venta.id }}/detail/';" title="Detalle">
+                            <i class="fa fa-list-ol"></i>
+                        </button>
+
+
+                        <button type="button" class="btn btn-primary btn-xs" onclick="location.href='/admin/ventas/venta/remisiones/{{ venta.id }}/';" title="Ver Remisiones">
+                            <i class="fa fa-th"></i>
+                        </button>
+
+
+                        <!--
+						<button type="button" class="btn btn-danger btn-xs" onclick="location.href='/admin/ventas/venta/{{ venta.id }}/print/';" title="Imprimir">
+							<i class="fa fa-file-pdf-o" aria-hidden="true"></i>
+						</button>
+						-->
+
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+        <table class="table">
+            <td>
+                <center>
+                    <ul class="pagination pagination-sm">
+                        {% if page_obj.has_previous %}
+                            <li class="previous">
+                                <a href="/admin/ventas/venta/?page={{ page_obj.previous_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&orden_de_trabajo={{ orden_de_trabajo }}&empresa_id={{ empresa_id }}&estado={{ estado }}&fecha_de_emision_desde={{ fecha_de_emision_desde }}&fecha_de_emision_hasta={{ fecha_de_emision_hasta }}&fecha_de_vencimiento_desde={{ fecha_de_vencimiento_desde }}&fecha_de_vencimiento_hasta={{ fecha_de_vencimiento_hasta }}&vendedor_id={{ vendedor_id }}">
+                                    <span aria-hidden="true">&larr;</span> Primera
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="/admin/ventas/venta/?page={{ page_obj.previous_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&orden_de_trabajo={{ orden_de_trabajo }}&empresa_id={{ empresa_id }}&estado={{ estado }}&fecha_de_emision_desde={{ fecha_de_emision_desde }}&fecha_de_emision_hasta={{ fecha_de_emision_hasta }}&fecha_de_vencimiento_desde={{ fecha_de_vencimiento_desde }}&fecha_de_vencimiento_hasta={{ fecha_de_vencimiento_hasta }}&vendedor_id={{ vendedor_id }}">
+                                    Anterior
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for page in page_obj.paginator.page_range|paginator_delimiter:page_obj.number %}
+                            <li>
+                                <a {% if page == page_obj.number %} class="active" style="background-color:#DD4814;color:white;" {% endif %} href="/admin/ventas/venta/?page={{ page }}&q={{ q }}&cliente_id={{ cliente_id }}&orden_de_trabajo={{ orden_de_trabajo }}&empresa_id={{ empresa_id }}&estado={{ estado }}&fecha_de_emision_desde={{ fecha_de_emision_desde }}&fecha_de_emision_hasta={{ fecha_de_emision_hasta }}&fecha_de_vencimiento_desde={{ fecha_de_vencimiento_desde }}&fecha_de_vencimiento_hasta={{ fecha_de_vencimiento_hasta }}&vendedor_id={{ vendedor_id }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li>
+                                <a href="/admin/ventas/venta/?page={{ page_obj.next_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&orden_de_trabajo={{ orden_de_trabajo }}&empresa_id={{ empresa_id }}&estado={{ estado }}&fecha_de_emision_desde={{ fecha_de_emision_desde }}&fecha_de_emision_hasta={{ fecha_de_emision_hasta }}&fecha_de_vencimiento_desde={{ fecha_de_vencimiento_desde }}&fecha_de_vencimiento_hasta={{ fecha_de_vencimiento_hasta }}&vendedor_id={{ vendedor_id }}">
+                                    Siguiente
+                                </a>
+                            </li>
+
+                            <li class="next">
+                                <a href="/admin/ventas/venta/?page={{ page_obj.paginator.num_pages}}&q={{ q }}&cliente_id={{ cliente_id }}&orden_de_trabajo={{ orden_de_trabajo }}&empresa_id={{ empresa_id }}&estado={{ estado }}&fecha_de_emision_desde={{ fecha_de_emision_desde }}&fecha_de_emision_hasta={{ fecha_de_emision_hasta }}&fecha_de_vencimiento_desde={{ fecha_de_vencimiento_desde }}&fecha_de_vencimiento_hasta={{ fecha_de_vencimiento_hasta }}&vendedor_id={{ vendedor_id }}">
+                                    &Uacute;ltima <span aria-hidden="true">&rarr;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                    </ul>
+                </center>
+            </td>
+            <th>
+                Pag. {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}
+            </th>
+        </table>
+    {% endif %}
+
+
+
+{% endblock %}

@@ -1,0 +1,6 @@
+1. Ejecutar makemigrations cliente --empty
+2. copiar el query en
+ migrations.RunSQL('''
+         UPDATE clientes_cliente SET limite_de_credito = 2000000.00 WHERE limite_de_credito is NULL ;
+        ''')
+3. ejecutar migrate cliente

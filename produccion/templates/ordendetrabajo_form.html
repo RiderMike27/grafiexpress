@@ -1,0 +1,356 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+    <script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+    {{ media }}
+{% endblock %}
+
+
+{% block extrajs %}
+    <script type="text/javascript" src="{% static 'js/autoNumeric.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/decimales.js' %}"></script>
+
+    <script type="text/javascript">
+        jQuery(function($) {
+            $('.auto').autoNumeric('init');
+        });
+    </script>
+{% endblock %}
+
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form{% endblock %}
+
+{% if not is_popup %}
+    {% block breadcrumbs %}
+        <div class="breadcrumbs">
+            <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+            &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+            &rsaquo; {% if has_change_permission %}<a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %}
+            &rsaquo; {% if add %}{% trans 'Add' %} {{ opts.verbose_name }}{% else %}{{ original|truncatewords:"18" }}{% endif %}
+        </div>
+    {% endblock %}
+{% endif %}
+
+{% block content %}<div id="content-main">
+    {% block object-tools %}
+        {% if change %}{% if not is_popup %}
+            <ul class="object-tools">
+                {% block object-tools-items %}
+                    <li>
+                        {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+                        <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
+                    </li>
+                    {% if has_absolute_url %}<li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>{% endif %}
+                {% endblock %}
+            </ul>
+        {% endif %}{% endif %}
+    {% endblock %}
+    <form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}{% block form_top %}{% endblock %}
+        <div>
+            {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1" />{% endif %}
+            {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}" />{% endif %}
+            {% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+            {% if errors %}
+                <p class="errornote">
+                    {% if errors|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+                </p>
+                {{ adminform.form.non_field_errors }}
+            {% endif %}
+
+            {% block field_sets %}
+                {% for fieldset in adminform %}
+                    {% include "admin/includes/fieldset.html" %}
+                {% endfor %}
+            {% endblock %}
+
+            {% block after_field_sets %}{% endblock %}
+
+            {% block inline_field_sets %}
+                {% for inline_admin_formset in inline_admin_formsets %}
+                    {% include inline_admin_formset.opts.template %}
+                {% endfor %}
+            {% endblock %}
+
+            {% block after_related_objects %}{% endblock %}
+
+            {% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+
+            {% block admin_change_form_document_ready %}
+                <script type="text/javascript">
+                    (function($) {
+
+                    $(document).on('DOMNodeInserted','[id="select2-id_cliente-container"]', function(e) {
+                            //$('#id_cliente').change(function(){
+                                var optionSelected = $('#id_cliente').find("option:selected");
+
+                                var id_cliente  = optionSelected.val();
+                                //var id_cliente = this.value;
+
+                                if(!id_cliente){
+                                    $("#id_vendedor").val("");
+                                    $("#id_limite_de_credito").val("");
+                                    return
+                                }
+
+                                $.ajax({
+                                    data : {'clienteid' : id_cliente },
+                                    url : "/admin/clientes/getcliente",
+                                    type : "get",
+                                    success : function(data){
+                                        console.log(data)
+                                        $("#id_vendedor").val(data[0].vendedor);
+                                        $("#id_limite_de_credito").val(data[0].limitedecredito);
+
+                                        $('.field-limite_de_credito > .field-limite_de_credito > ul.errorlist').remove();
+                                        console.log('limite ', data[0].limitedecredito);
+                                        if(data[0].limitedecredito !== ''){
+
+                                            var limite = parseFloat(($('#id_limite_de_credito').val()!='')?unformat(document.getElementById('id_limite_de_credito')):'0');
+                                            if(limite < data[0].total_deuda){
+
+                                                html = "<ul class='errorlist' style='margin-left: 0;'><li style='display: inline-block;'>Cliente excedido en límite de crédito, favor contactar con administración.</li></ul>";
+
+                                                $('.field-limite_de_credito > .field-limite_de_credito').append(html);
+
+                                                {% if not perms.produccion.save_limite_credito  %}
+                                                    $('.submit-row').hide();
+                                                {% endif %}
+
+                                            }
+                                            else {
+                                                $('.submit-row').show();
+                                            }
+                                        }
+                                    }
+                                });
+                            });
+
+
+                        $(document).ready(function() {
+                            $('.add-another').click(function(e) {
+                                e.preventDefault();
+                                showAddAnotherPopup(this);
+                            });
+
+                            $('#id_automatico').click(function(e) {
+                                if( $(this).is(':checked')==true ){
+                                    $('#id_numero').val("");
+                                    $('#id_numero').attr('readonly', true);
+                                }else{
+                                    $('#id_numero').attr('readonly', false);
+                                }
+                            });
+
+
+
+                            // quitar coma decimal y separadores de miles antes del submit
+                            $('form input[type=submit]').click(function(e) {
+                                //$('.auto').each(function (){
+                                //    $(this).val(($(this).val()!='')?unformat(document.getElementById(this.id.toString())):'');
+                                //});
+
+                                e.preventDefault();
+                                controlarLimiteCredito();
+
+                            });
+
+                            // recargar el plugin de autonumeric al crear una nueva fila
+                            $('.add-row').click(function() {
+                                jQuery(function($) {
+                                    $('.auto').autoNumeric('init');
+                                });
+                                set_cantidades();
+                            });
+
+                            // calcular total
+                            $('.auto').keyup(function(){
+                                calcular_total();
+                                set_cantidades();
+                            });
+
+                            $('#id_cambios').change(function () {
+                                $('#id_materiales_compuestos').prop('checked',false)
+                            });
+
+                            $('#id_materiales_compuestos').change(function () {
+                                $('#id_cambios').prop('checked',false)
+                            });
+
+
+
+                            $('select').change(function(){
+                                vector = $(this).attr("id").split("-")
+                                if(vector[2] == "material"){
+                                    var optionSelected = $(this).find("option:selected");
+                                    var valueSelected  = optionSelected.val();
+                                    if(!valueSelected){
+                                        $("#id_detalleordendetrabajo_set-" + vector[1] + "-gramaje").val("");
+                                        $("#id_detalleordendetrabajo_set-" + vector[1] + "-resma").val("");
+                                        $("#id_detalleordendetrabajo_set-" + vector[1] + "-marca").val("");
+                                        return
+                                    }
+                                    $.ajax({
+                                        data : {'materialid' : valueSelected },
+                                        url : "/admin/materiales/getmaterial",
+                                        type : "get",
+                                        success : function(data){
+                                            $("#id_detalleordendetrabajo_set-" + vector[1] + "-gramaje").val(data[0].gramaje);
+                                            $("#id_detalleordendetrabajo_set-" + vector[1] + "-resma").val(data[0].resma);
+                                            $("#id_detalleordendetrabajo_set-" + vector[1] + "-marca").val(data[0].marca);
+                                        }
+                                    });
+                                }
+
+
+
+
+                            });
+
+                            {% if not perms.produccion.set_vendedor_ot %}
+                                lastSel = ''
+                                $("#id_vendedor").click(function(){
+                                    lastSel = $("#id_vendedor").val();
+                                });
+
+                                $('#id_vendedor').change(function(){
+                                    alert("No posee permisos para cambiar el vendedor");
+                                    /*
+                                     var optionSelected = $('#id_cliente').find("option:selected");
+                                     var valueSelected  = optionSelected.val();
+                                     if(!valueSelected){
+                                     $('#id_vendedor').val("")
+                                     return
+                                     }
+                                     $.ajax({
+                                     data : {'clienteid' : valueSelected },
+                                     url : "/admin/clientes/getcliente",
+                                     type : "get",
+                                     success : function(data){
+                                     $("#id_vendedor").val(data[0].vendedor);
+                                     }
+                                     });
+                                     */
+                                    $('#id_vendedor').val(lastSel);
+
+                                });
+
+                            {% endif %}
+
+
+                            {% if adminform and add %}
+                                $('form#{{ opts.model_name }}_form :input:visible:enabled:first').focus()
+                            {% endif %}
+                        });
+                    })(django.jQuery);
+
+
+                    //$('form input[type=submit]').click(function(e) {
+
+
+                    //});
+                    function controlarLimiteCredito(){
+                        var limite = parseFloat($('#id_limite_de_credito').autoNumeric('get'));
+                        var total_ot = parseFloat($('#id_total').autoNumeric('get'));
+                        if(limite < total_ot){
+                            console.log($('#myModal'));
+                            $('#myModal').modal('show');
+                        }else{
+                            $('.auto').each(function (){
+                                    //$(this).val(($(this).val()!='')?unformat(document.getElementById(this.id.toString())):'');
+                                $(this).val($(this).autoNumeric('get'));
+                            });
+
+                            $('form').submit();
+                        }
+                    }
+                    function cerrarModal(){
+                        $('#myModal').modal('hide');
+                    }
+                    function guardarModal(){
+                        $('.auto').each(function (){
+                                    //$(this).val(($(this).val()!='')?unformat(document.getElementById(this.id.toString())):'');
+                                $(this).val($(this).autoNumeric('get'));
+                            });
+                        $('#myModal').modal('hide');
+                        $('form').submit();
+                    }
+
+                    /*
+                     calculo de los totales
+                     */
+                    function calcular_total(){
+                        var cantidad = ($('#id_cantidad').val()!='')?unformat(document.getElementById('id_cantidad')):'0';
+                        console.log(cantidad)
+
+                        var precio = ($('#id_precio_unitario').val()!='')?unformat(document.getElementById('id_precio_unitario')):'0';
+                        console.log(precio)
+
+
+                        var total = parseFloat(cantidad) * parseFloat(precio);
+
+                        $('#id_total').val( parseFloat(total).toString().replace(".",",") );
+                        format(document.getElementById('id_total'));
+                    }
+
+                    /*
+                     setear el mismo valor de cantidad de la cabecera en todos los detalles
+                     si cambios no está marcado
+                     */
+                    function set_cantidades(){
+                        var total_forms = $('#id_detalleordendetrabajo_set-TOTAL_FORMS').val();
+                        if(! $('#id_cambios').is(':checked') ){
+                            for(i=0;i<total_forms;i++){
+                                $("#id_detalleordendetrabajo_set-"+i+"-cantidad").val( $("#id_cantidad").val() );
+                            }
+                        }
+
+                        var suma = 0;
+                        for(i=0;i<total_forms;i++){
+                            cantidad = ($("#id_detalleordendetrabajo_set-"+i+"-cantidad").val()!='') ? unformat(document.getElementById("id_detalleordendetrabajo_set-"+i+"-cantidad")) :'0';
+                            suma = parseFloat(suma) + parseFloat(cantidad);
+                        }
+
+                        $('#id_suma_cantidad').val( parseFloat(suma).toString().replace(".",",") );
+                        format(document.getElementById('id_suma_cantidad'));
+                    }
+
+                </script>
+            {% endblock %}
+
+            {# JavaScript for prepopulated fields #}
+            {% prepopulated_fields_js %}
+
+        </div>
+        <!-- Modal -->
+        <div id="myModal" class="modal fade" role="dialog">
+          <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Límite de crédito superado</h4>
+              </div>
+              <div class="modal-body">
+                  <p>El monto total de la OT supera el límite de crédito del cliente.</p>
+                <p>Desea continuar?</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" onclick="cerrarModal()" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+
+                  {% if perms.produccion.save_limite_credito  %}
+{#                  <button type="button" onclick="$('form').submit()" class="btn btn-primary" data-dismiss="modal">Guardar</button>#}
+                      <button type="button" onclick="guardarModal()" class="btn btn-primary" data-dismiss="modal">Guardar</button>
+                  {% endif %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+    </form></div>
+{% endblock %}

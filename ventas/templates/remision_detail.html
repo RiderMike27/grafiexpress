@@ -1,0 +1,205 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block content %}
+<h1>Datos de la Remision</h1>
+<table class="table table-striped table-filter" summary="Datos de la Remision.">
+	<tbody>
+		<tr>
+			<th scope="row"> Numero de remision</th>
+			<td> {{ object.get_numero_de_remision }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Empresa </th>
+			<td> {{ object.empresa }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Sucursal </th>
+			<td> {{ object.sucursal }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Timbrado </th>
+			<td> {{ object.timbrado }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Fecha de emision </th>
+			<td> {{ object.fecha_de_emision }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Cliente </th>
+			<td> {{ object.cliente }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Motivo del traslado </th>
+			<td> {{ object.motivo_del_traslado }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Comprobante de venta </th>
+			<td> {{ object.comprobante_de_venta }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Numero de Comprobante de venta </th>
+			<td> {{ object.numero_de_comprobante_de_venta }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Numero de timbrado </th>
+			<td> {{ object.numero_de_timbrado }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Fecha de expedicion </th>
+			<td> {{ object.fecha_de_expedicion }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Fecha de inicio del traslado </th>
+			<td> {{ object.fecha_de_inicio_del_traslado }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Fecha estimada de termino del traslado </th>
+			<td> {{ object.fecha_estimada_de_termino_del_traslado }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Direccion del punto de partida </th>
+			<td> {{ object.direccion_del_punto_de_partida }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Departamento de partida </th>
+			<td> {{ object.departamento_de_partida }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Direccion del punto de llegada </th>
+			<td> {{ object.direccion_del_punto_de_llegada }} </td>
+		</tr>
+
+
+		<tr>
+			<th scope="row"> Ciudad de llegada </th>
+			<td> {{ object.ciudad_de_llegada }} </td>
+		</tr>
+
+
+		<tr>
+			<th scope="row"> Departamento de llegada </th>
+			<td> {{ object.departamento_de_llegada }} </td>
+		</tr>
+
+
+		<tr>
+			<th scope="row"> Kilometros estimados de recorrido </th>
+			<td> {{ object.kilometros_estimados_de_recorrido|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }} </td>
+		</tr>
+
+
+		<tr>
+			<th scope="row"> Cambio de fecha de termino del traslado o punto de llegada </th>
+			<td> {{ object.cambio_de_fecha_de_termino_del_traslado_o_punto_de_llegada }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Motivo </th>
+			<td> {{ object.motivo }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Marca del vehiculo</th>
+			<td> {{ object.vehiculo.marca }} </td>
+		</tr>
+		
+		<tr>
+			<th scope="row"> Numero de registro unico del automotor (RUA) </th>
+			<td> {{ object.vehiculo.rua }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Numero de registro unico del automotor (RUA) de remolquetracto/semiremolque </th>
+			<td> {{ object.vehiculo.rua_remolque }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Nombre </th>
+			<td> {{ object.chofer }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> RUC/CI </th>
+			<td> {{ object.chofer.ruc }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Domicilio </th>
+			<td> {{ object.chofer.direccion }} </td>
+		</tr>
+
+	</tbody>
+</table>
+
+{% if detalles %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Detalle de la Remision (sin cambios)</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>
+			<th>Cantidad</th>
+			<th>Unidad de medida</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles %}
+		<tr>
+			<td>{{ detalle.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.unidad_de_medida }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+
+{% if detalles2 %}
+<table id="result_list2" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Detalle de la Remision (con cambios)</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>
+			<th>Cantidad</th>
+			<th>Unidad de medida</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles2 %}
+		<tr>
+			<td>{{ detalle.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.unidad_de_medida }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+<button type="button" class="btn btn-primary" onclick="window.history.back(); return false;">Volver</button>
+
+{% endblock %}

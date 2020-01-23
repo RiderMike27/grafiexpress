@@ -1,0 +1,490 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_modify %}
+{% block extrahead %}{{ block.super }}
+    <script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+    {{ media }}
+{% endblock %}
+{% block extrajs %}
+    <script type="text/javascript" src="{% static 'js/autoNumeric.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/decimales.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.maskedinput.min.js' %}"></script>
+    <script type="text/javascript">
+        jQuery(function($) {
+            $('.auto').autoNumeric('init');
+            $("#id_numero_de_factura").mask("999-999-9999999");
+        });
+    </script>
+    {{ form.media.js }}
+{% endblock %}
+{% block extrastyle %}{{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+{% endblock %}
+{% block coltype %}colM{% endblock %}
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form{% endblock %}
+{% if not is_popup %}
+    {% block breadcrumbs %}
+        <div class="breadcrumbs">
+            <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+            &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+            &rsaquo; {% if has_change_permission %}<a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %}
+            &rsaquo; {% if add %}{% trans 'Add' %} {{ opts.verbose_name }}{% else %}{{ original|truncatewords:"18" }}{% endif %}
+        </div>
+    {% endblock %}
+{% endif %}
+{% block content %}<div id="content-main">
+    {% block object-tools %}
+        {% if change %}{% if not is_popup %}
+            <ul class="object-tools">
+                {% block object-tools-items %}
+                    <li>
+                        {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+                        <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
+                    </li>
+                    {% if has_absolute_url %}<li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>{% endif %}
+                {% endblock %}
+            </ul>
+        {% endif %}{% endif %}
+    {% endblock %}
+    <form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}{% block form_top %}{% endblock %}
+        <div>
+            {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1" />{% endif %}
+            {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}" />{% endif %}
+            {% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+            {% if errors %}
+                <p class="errornote">
+                    {% if errors|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+                </p>
+                {{ adminform.form.non_field_errors }}
+            {% endif %}
+
+            {% block field_sets %}
+                {% for fieldset in adminform %}
+                    {% include "admin/includes/fieldset.html" %}
+                {% endfor %}
+            {% endblock %}
+            {% block after_field_sets %}{% endblock %}
+
+            {% block inline_field_sets %}
+                {% for inline_admin_formset in inline_admin_formsets %}
+                    {% include inline_admin_formset.opts.template %}
+                {% endfor %}
+            {% endblock %}
+            {% block after_related_objects %}{% endblock %}
+            {% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+            {% block admin_change_form_document_ready %}
+                <script type="text/javascript">
+
+
+                    function addRow(options_prefix){
+                        var addButton = $('.add-row');
+                        var totalForms = $("#id_" + options_prefix + "-TOTAL_FORMS").prop("autocomplete", "off");
+                        var nextIndex = parseInt(totalForms.val(), 10);
+                        var maxForms = $("#id_" + options_prefix + "-MAX_NUM_FORMS").prop("autocomplete", "off");
+                        var updateElementIndex = function(el, prefix, ndx) {
+                            var id_regex = new RegExp("(" + prefix + "-(\\d+|__prefix__))");
+                            var replacement = prefix + "-" + ndx;
+                            if ($(el).prop("for")) {
+                                $(el).prop("for", $(el).prop("for").replace(id_regex, replacement));
+                            }
+                            if (el.id) {
+                                el.id = el.id.replace(id_regex, replacement);
+                            }
+                            if (el.name) {
+                                el.name = el.name.replace(id_regex, replacement);
+                            }
+                        };
+
+                        var template = $("#" + options_prefix + "-empty");
+                        var row = template.clone(true);
+                        row.removeClass("empty-row empty-form")
+                            .addClass("dynamic-"+options_prefix)
+                            .attr("id", options_prefix + "-" + nextIndex);
+
+                        row.find("*").each(function() {
+                            updateElementIndex(this, options_prefix, totalForms.val());
+                        });
+                        // Insert the new form when it has been fully edited
+                        row.insertBefore($(template));
+                        // Update number of total forms
+                        $(totalForms).val(parseInt(totalForms.val(), 10) + 1);
+                        nextIndex += 1;
+                    }
+
+                    function deleteRow(options_prefix, index) {
+                        var addButton = $('.add-row');
+                        var totalForms = $("#id_" + options_prefix + "-TOTAL_FORMS").prop("autocomplete", "off");
+                        var nextIndex = parseInt(totalForms.val(), 10);
+                        var maxForms = $("#id_" + options_prefix + "-MAX_NUM_FORMS").prop("autocomplete", "off");
+                        var updateElementIndex = function(el, prefix, ndx) {
+                            var id_regex = new RegExp("(" + prefix + "-(\\d+|__prefix__))");
+                            var replacement = prefix + "-" + ndx;
+                            if ($(el).prop("for")) {
+                                $(el).prop("for", $(el).prop("for").replace(id_regex, replacement));
+                            }
+                            if (el.id) {
+                                el.id = el.id.replace(id_regex, replacement);
+                            }
+                            if (el.name) {
+                                el.name = el.name.replace(id_regex, replacement);
+                            }
+                        };
+                        // Remove the parent form containing this button:
+                        $("#" + options_prefix + "-" + index).remove();
+                        nextIndex -= 1;
+
+                        // Update the TOTAL_FORMS form count.
+                        var forms = $("." + "dynamic-"+options_prefix);
+                        $("#id_" + options_prefix + "-TOTAL_FORMS").val(forms.length);
+                        // Show add button again once we drop below max
+                        if ((maxForms.val() == '') || (maxForms.val()-forms.length) > 0) {
+                            addButton.parent().show();
+                        }
+                        // Also, update names and ids for all remaining form controls
+                        // so they remain in sequence:
+                        for (var i=0, formCount=forms.length; i<formCount; i++) {
+                            updateElementIndex($(forms).get(i), options_prefix, i);
+                            $(forms.get(i)).find("*").each(function() {
+                                updateElementIndex(this, options_prefix, i);
+                            });
+                        }
+                        return false;
+                    }
+
+
+                    (function($) {
+                        $(document).ready(function() {
+                            $('.add-another').click(function(e) {
+                                e.preventDefault();
+                                showAddAnotherPopup(this);
+                            });
+
+                            // quitar coma decimal y separadores de miles antes del submit
+                            $('form input[type=submit]').click(function(e) {
+                                $('.auto').each(function (){
+                                    $(this).val(($(this).val()!='')?unformat(document.getElementById(this.id.toString())):'');
+                                });
+                            });
+
+                            // recalcular totales al marcar o desmarcar algo como borrado
+                            $('form input[type=checkbox]').click(function(e) {
+                                calcular_total();
+                            });
+
+                            // recalcular totales al borrar un item de un detalle no guardador (con botoncito 'x' )
+                            $('.inline-deletelink').click(function() {
+                                calcular_total();
+                            });
+
+                            // recargar el plugin de autonumeric al crear una nueva fila
+                            $('.add-row').click(function() {
+                                jQuery(function($) {
+                                    $('.auto').autoNumeric('init');
+                                });
+                                set_iva_cliente();
+                            });
+
+                            // traer datos por AJAX
+                            /*
+                            $("#id_remision").change(function () {
+                                var remisiones = $(this).val();
+
+                                if(remisiones == null){
+                                    var totalForms = $("#id_detalledeventa_set-TOTAL_FORMS").val();
+                                    for(i = 0; i<totalForms; i++){
+                                        deleteRow('detalledeventa_set', 0);
+                                    }
+
+                                    var totalForms2 = $("#id_detalledeventa_set2-TOTAL_FORMS").val();
+                                    for(i = 0; i<totalForms2; i++){
+                                        deleteRow('detalledeventa2_set', 0);
+                                    }
+
+                                }else{
+                                    $.ajax({
+                                        data : {'id_remisiones': remisiones.toString()},
+                                        url : "/admin/ventas/get_detalle_de_remision",
+                                        type: "get",
+                                        success : function(data){
+                                            var totalForms = $("#id_detalledeventa_set-TOTAL_FORMS").val();
+                                            //addRow('detalledeventa_set');
+                                            for(i = 0; i<totalForms; i++){
+                                                deleteRow('detalledeventa_set', 0);
+                                            }
+
+                                            for(i=0; i< data.length; i++){
+                                                addRow('detalledeventa_set');
+                                                $('#id_detalledeventa_set-' + i + '-orden_de_trabajo').append('<option selected="selected" value="' + data[i].id+'">'+data[i].ot+'</option>')
+                                                $("#id_detalledeventa_set-" + i + "-cantidad").val(data[i].cantidad);
+                                                $("#id_detalledeventa_set-" + i + "-descripcion").val(data[i].descripcion);
+                                                $("#id_detalledeventa_set-" + i + "-descripcion_extra").val(data[i].orden_de_compra);
+                                                $("#id_detalledeventa_set-" + i + "-precio_unitario").val(data[i].precio_unitario);
+                                            }
+                                            calcular_total();
+                                            set_iva_cliente();
+                                        }
+
+                                    });
+
+                                    $.ajax({
+                                        data : {'id_remisiones': remisiones.toString()},
+                                        url : "/admin/ventas/get_detalle2_de_remision",
+                                        type: "get",
+                                        success : function(data){
+                                            var totalForms2 = $("#id_detalledeventa2_set-TOTAL_FORMS").val();
+                                            //addRow('detalledeventa2_set');
+                                            for(i=0; i<totalForms2; i++){
+                                                deleteRow('detalledeventa2_set', 0);
+                                            }
+
+                                            console.log(data.length)
+                                            for(i=0; i< data.length; i++){
+                                                addRow('detalledeventa2_set');
+                                                $("#id_detalledeventa2_set-" + i + "-detalle_orden_de_trabajo").append('<option selected="selected" value="' +data[i].id+'">'+data[i].dot+'</option>')
+                                                $("#id_detalledeventa2_set-" + i + "-cantidad").val(data[i].cantidad);
+                                                $("#id_detalledeventa2_set-" + i + "-descripcion").val(data[i].descripcion);
+                                                $("#id_detalledeventa2_set-" + i + "-descripcion_extra").val(data[i].orden_de_compra);
+                                                $("#id_detalledeventa2_set-" + i + "-precio_unitario").val(data[i].precio_unitario);
+                                            }
+                                            calcular_total();
+                                            set_iva_cliente();
+                                        }
+                                    })
+
+                                }
+                            });*/
+
+                            $('select').change(function(){
+
+                                vector = $(this).attr("id").split("-");
+
+                                if(vector[0] == "id_cliente"){
+                                    var optionSelected = $(this).find("option:selected");
+                                    var valueSelected  = optionSelected.val();
+                                    if(!valueSelected){
+                                        $("#id_telefono").val("");
+                                        $("#id_contacto").val("");
+                                        //$("#id_condicion").val("");
+                                        return
+                                    }
+                                    $.ajax({
+                                        data : {'clienteid' : valueSelected },
+                                        url : "/admin/clientes/getcliente",
+                                        type : "get",
+                                        success : function(data){
+                                            $("#id_telefono").val(data[0].telefono);
+                                            $("#id_contacto").val(data[0].contacto);
+                                            $("#id_condicion").val(data[0].condicion);
+                                        }
+                                    });
+                                }
+
+                                if(vector[0] == "id_talonario"){
+                                    var optionSelected = $(this).find("option:selected");
+                                    var valueSelected  = optionSelected.val();
+                                    console.log(valueSelected)
+                                    if(!valueSelected){
+                                        $("#id_timbrado").val("");
+                                        $("#id_empresa").val("");
+                                        $("#id_sucursal").val("");
+                                        $("#id_numero_de_factura").val("");
+                                        return
+                                    }
+                                    $.ajax({
+                                        data : {'talonarioid' : valueSelected },
+                                        url : "/admin/empresas/gettalonario/",
+                                        type : "get",
+                                        success : function(data){
+                                            $("#id_timbrado").val(data[0].timbrado);
+                                            $("#id_empresa").val(data[0].empresa);
+                                            $("#id_sucursal").val(data[0].sucursal);
+                                            $("#id_numero_de_factura").val(data[0].numero);
+                                        }
+                                    });
+                                }
+
+                                if((vector[0] == "id_detalledeventa_set") && (vector[2] == "orden_de_trabajo")){
+                                    var optionSelected = $(this).find("option:selected");
+                                    var valueSelected  = optionSelected.val();
+                                    console.log(valueSelected);
+                                    if(!valueSelected){
+                                        $("#id_detalledeventa_set-" + vector[1] + "-cantidad").val("");
+                                        $("#id_detalledeventa_set-" + vector[1] + "-descripcion").val("");
+                                        $("#id_detalledeventa_set-" + vector[1] + "-descripcion_extra").val("");
+                                        $("#id_detalledeventa_set-" + vector[1] + "-precio_unitario").val("");
+                                        calcular_total();
+                                        return
+                                    }
+                                    $.ajax({
+                                        data : {'otid' : valueSelected },
+                                        url : "/admin/produccion/getordendetrabajo/",
+                                        type : "get",
+                                        success : function(data){
+                                            $("#id_detalledeventa_set-" + vector[1] + "-cantidad").val(data[0].cantidad_no_facturada);
+                                            $("#id_detalledeventa_set-" + vector[1] + "-descripcion").val(data[0].nombre);
+                                            $("#id_detalledeventa_set-" + vector[1] + "-descripcion_extra").val(data[0].orden_de_compra);
+                                            $("#id_detalledeventa_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                            calcular_total();
+                                            set_iva_cliente();
+                                        }
+                                    });
+                                }
+
+                                if((vector[0] == "id_detalledeventa2_set") && (vector[2] == "detalle_orden_de_trabajo")){
+                                    var optionSelected = $(this).find("option:selected");
+                                    var valueSelected  = optionSelected.val();
+                                    console.log(valueSelected);
+                                    if(!valueSelected){
+                                        $("#id_detalledeventa2_set-" + vector[1] + "-cantidad").val("");
+                                        $("#id_detalledeventa2_set-" + vector[1] + "-descripcion").val("");
+                                        $("#id_detalledeventa2_set-" + vector[1] + "-descripcion_extra").val("");
+                                        $("#id_detalledeventa2_set-" + vector[1] + "-precio_unitario").val("");
+                                        calcular_total();
+                                        return
+                                    }
+                                    $.ajax({
+                                        data : {'dotid' : valueSelected },
+                                        url : "/admin/produccion/getdetalleordendetrabajo/",
+                                        type : "get",
+                                        success : function(data){
+                                            $("#id_detalledeventa2_set-" + vector[1] + "-cantidad").val(data[0].detallecantidad);
+                                            $("#id_detalledeventa2_set-" + vector[1] + "-descripcion").val(data[0].nombre);
+                                            $("#id_detalledeventa2_set-" + vector[1] + "-descripcion_extra").val(data[0].orden_de_compra);
+                                            $("#id_detalledeventa2_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+
+                                            calcular_total();
+                                            set_iva_cliente();
+                                        }
+                                    });
+                                }
+
+                                if((vector[0] == "id_detalleventamateriales_set")){
+                                    var optionSelected = $(this).find("option:selected");
+                                    var valueSelected  = optionSelected.val();
+                                    if(!valueSelected){
+                                        $("#id_detalleventamateriales_set-" + vector[1] + "-cantidad").val("");
+                                        $("#id_detalleventamateriales_set-" + vector[1] + "-descripcion").val("");
+                                        $("#id_detalleventamateriales_set-" + vector[1] + "-precio_unitario").val("");
+
+                                        calcular_total();
+                                        return
+                                    }
+                                    $.ajax({
+                                        data : {'materialid' : valueSelected },
+                                        url : "/admin/materiales/getmaterial/",
+                                        type : "get",
+                                        success : function(data){
+                                            $("#id_detalleventamateriales_set-" + vector[1] + "-descripcion").val(data[0].material);
+                                            $("#id_detalleventamateriales_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                            $("#id_detalleventamateriales_set-" + vector[1] + "-iva").val(data[0].iva);
+                                            calcular_total();
+                                        }
+                                    });
+                                }
+
+                                if((vector[0] == "id_cliente") || (vector[0] == 'id_condicion' )){
+                                    var optionSelected = $('#id_cliente').find("option:selected");
+                                    var valueSelected  = optionSelected.val();
+
+                                    if(!valueSelected){
+                                        $('#id_fecha_de_vencimiento').val('');
+                                    }
+                                    $.ajax({
+                                        data : {'cliente_id' : valueSelected },
+                                        url : "/admin/ventas/venta/get_plazo_credito/",
+                                        type : "get",
+                                        success : function(data){
+                                            if ($('#id_condicion').val() == 'CR'){
+                                                $('#id_fecha_de_vencimiento').val(data.fecha_vencimiento_credito);
+                                            }
+                                        }
+                                    });
+
+                                }
+
+
+                            });
+
+
+                            $('#id_cliente').change(function(){
+                                set_iva_cliente();
+                            });
+
+
+                            // calcular totales al editar campos numericos
+                            $('.auto').keyup(function(){
+                                calcular_total();
+                            });
+
+                            {% if adminform and add %}
+                                $('form#{{ opts.model_name }}_form :input:visible:enabled:first').focus();
+                            {% endif %}
+                        });
+                    })(django.jQuery);
+                    /*
+                     setear iva del cliente
+                     */
+                    function set_iva_cliente(){
+                        var optionSelected = $('#id_cliente').find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        console.log(valueSelected)
+
+                        if(!valueSelected){ return }
+
+                        $.ajax({
+                            data : {'clienteid' : valueSelected },
+                            url : "/admin/clientes/getcliente/",
+                            type : "get",
+                            success : function(data){
+                                total_forms = $('#id_detalledeventa_set-TOTAL_FORMS').val()
+                                for(i=0; i<total_forms; i++){
+                                    $('#id_detalledeventa_set-'+i+'-iva').val(data[0].libredeimpuesto)
+                                }
+                                total_forms = $('#id_detalledeventa2_set-TOTAL_FORMS').val()
+                                for(i=0; i<total_forms; i++){
+                                    $('#id_detalledeventa2_set-'+i+'-iva').val(data[0].libredeimpuesto)
+                                }
+
+                            }
+                        });
+                    }
+
+                    /*
+                     calculo de los totales
+                     */
+                    function calcular_total(){
+                        var total_general = 0;
+                        $('.subtotal_iterable').each(function(){
+                            var vector = $(this).attr("id").split("-");
+
+                            var cantidad = ($('#'+vector[0]+'-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById(vector[0]+'-'+vector[1]+'-cantidad')):'0';
+
+                            var precio = ($('#'+vector[0]+'-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById(vector[0]+'-'+vector[1]+'-precio_unitario')):'0';
+
+
+                            var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                            if( (cantidad!='0') && (precio!='0') ){
+                                $('#'+vector[0]+'-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") );
+                                format(document.getElementById(vector[0]+'-'+vector[1]+'-subtotal'));
+                            } else {
+                                $('#'+vector[0]+'-'+vector[1]+'-subtotal').val('');
+                            }
+
+                            if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')==false){
+                                total_general += subtotal
+                            }
+                        });
+
+                        $('#id_total').val( parseFloat(total_general).toString().replace(".",",") );
+                        format(document.getElementById('id_total'));
+                    }
+
+                </script>
+            {% endblock %}
+
+            {# JavaScript for prepopulated fields #}
+            {% prepopulated_fields_js %}
+
+        </div>
+    </form></div>
+{% endblock %}

@@ -1,0 +1,236 @@
+{% extends 'admin/base_site.html'%}
+{% load i18n admin_static %}
+{% load my_tags %}
+{% load humanize %}
+
+{% block extrastyle %}
+    <link rel="stylesheet" href="{% static 'chosen/chosen.css' %}">
+    <link rel="stylesheet" href="{% static 'chosen/docsupport/prism.css' %}">
+{% endblock %}
+
+{% block extrajs %}
+    <script src="{% static 'chosen/chosen.jquery.js' %}"></script>
+    <script src="{% static 'chosen/docsupport/prism.js' %}"></script>
+
+    <script type="text/javascript" src="{% static 'js/jquery.maskedinput.min.js' %}"></script>
+
+
+    <script type="text/javascript">
+        $(".chosen-select").chosen({
+            disable_search_threshold: 0,
+            no_results_text: "Sin resultados..",
+            width: "300px",
+            allow_single_deselect: true
+        });
+        $('.chosen-select').trigger('chosen:updated');
+
+        jQuery(function($) {
+            $(".date").mask("99/99/9999",{placeholder:"dd/mm/aaaa"});
+
+        });
+
+
+    </script>
+{% endblock %}
+
+{% block content %}
+    <form class="form" method="get">
+        <h1>Lista de Actividades</h1>
+        <center>
+            <dl>
+                <table class="table-filter table table-bordered table-stripped">
+                    <tbody>
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Buscar:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="search-query" placeholder="Numero o Descripcion del trabajo.." name="q" value="{{ q }}">
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Canal:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select class="chosen-select" data-placeholder="Seleccione un canal.." name="canal_id" value="{{ canal_id }}" onchange="this.form.submit();">
+                                <option value=""></option>
+                                {% for canal in canales %}
+                                    <option {% if canal.pk == canal_id %} selected {% endif %} value="{{ canal.id }}">{{ canal }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Fecha desde:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_desde" value="{{ fecha_desde }}">
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Fecha hasta:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_hasta" value="{{ fecha_hasta }}">
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Cliente:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select class="chosen-select" data-placeholder="Seleccione un cliente.." name="cliente_id" value="{{ cliente_id }}" onchange="this.form.submit();">
+                                <option value=""></option>
+                                {% for cliente in clientes %}
+                                    <option {% if cliente.pk == cliente_id %} selected {% endif %} value="{{ cliente.id }}">{{ cliente }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <th style="vertical-align:middle">
+                            <strong> Vendedor:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            {% if perms.produccion.view_all_ots %}
+                                <select class="chosen-select" data-placeholder="Seleccione un vendedor.." name="vendedor_id" value="{{ vendedor_id }}" onchange="this.form.submit();">
+                                    <option value=""></option>
+                                    {% for vendedor in vendedores %}
+                                        <option {% if vendedor.pk == vendedor_id %} selected {% endif %} value="{{ vendedor.id }}">{{ vendedor }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% else %}
+                                <select class="chosen-select" name="vendedor_id" value="{{ vendedor_id }}" onloadstart="this.form.submit();">
+                                    <option value="{{ usuario_id }}">{{ usuario_id }}</option>
+                                </select>
+                            {% endif %}
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th style="border-top :3px solid white; border-right :3px solid white; border-bottom :3px solid white;">
+                            <a class="btn btn-info" href="/admin/comercial/actividad/" title="Limpiar Filtros">
+                                <i class="fa fa-undo"></i>
+                            </a>
+                            <input type="submit" value="Buscar" class="btn btn-success" hidden="hidden" style="display: none">
+                        </th>
+                    </tr>
+                    </tbody>
+                </table>
+            </dl>
+        </center>
+
+        <div id="next_button" align="right">
+                <button onclick="this.form.submit();" class="btn btn-success" name="excel" value="excel" type="submit" title="Exportar a Excel">
+                    <i class="fa fa-file-excel-o"></i>
+                </button>
+                <button type="button" class="btn btn-primary" onclick="location.href='/admin/comercial/actividad/add/';" title="Agregar actividad">
+                    <span class="glyphicon glyphicon-plus"></span>
+                </button>
+        </div>
+    </form>
+
+    <div align="center">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Numero</th>
+                <th>Contacto</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <td>
+                    {% if perms.produccion.view_all_ots %}
+                        Creación
+                    {% endif %}
+                </td>
+                <th>Canal</th>
+                <th>Vendedor</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for actividad in object_list %}
+                <tr {% if actividad.realizado %} class="bg-success" {% elif not actividad.realizado and actividad.fecha < hoy %} class="bg-danger"{% endif %}>
+                    <td>{{ actividad.id|separador_miles }}</td>
+                    <td>{{ actividad.contacto }}</td>
+                    <td>{{ actividad.cliente }}</td>
+                    <td>{{ actividad.fecha }}</td>
+                    <td>
+                        {% if perms.produccion.view_all_ots %}
+                            {{ actividad.fecha_creacion }}
+                        {% endif %}
+                    </td>
+                    <td>{{ actividad.canal }}</td>
+                    <td>{{ actividad.vendedor }}</td>
+                    <td>
+                        {% if not actividad.realizado %}
+                            <button type="button" class="btn btn-warning btn-xs" onclick="location.href='/admin/comercial/actividad/{{ actividad.id }}/';" title="Editar">
+                                <i class="fa fa-pencil"></i>
+                            </button>
+                        {% endif %}
+
+                        <button type="button" class="btn btn-primary btn-xs" onclick="location.href='/admin/comercial/actividad/{{ actividad.id }}/detail';" title="Ver">
+                            <i class="fa fa-eye"></i>
+                        </button>
+
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+        <table class="table">
+            <td>
+                <center>
+                    <ul class="pagination pagination-sm">
+                        {% if page_obj.has_previous %}
+                            <li class="previous">
+                                <a href="/admin/comercial/actividad/?page={{ page_obj.previous_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&canal_id={{ canal_id }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}">
+                                    <span aria-hidden="true">&larr;</span> Primera
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="/admin/comercial/actividad/?page={{ page_obj.previous_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&canal_id={{ canal_id }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}">
+                                    Anterior
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for page in page_obj.paginator.page_range|paginator_delimiter:page_obj.number %}
+                            <li>
+                                <a {% if page == page_obj.number %} class="active" style="background-color:#DD4814;color:white;" {% endif %} href="/admin/comercial/actividad/?page={{ page }}&q={{ q }}&cliente_id={{ cliente_id }}&canal_id={{ canal_id }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li>
+                                <a href="/admin/comercial/actividad/?page={{ page_obj.next_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&canal_id={{ canal_id }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}">
+                                    Siguiente
+                                </a>
+                            </li>
+
+                            <li class="next">
+                                <a href="/admin/comercial/actividad/?page={{ page_obj.paginator.num_pages}}&q={{ q }}&cliente_id={{ cliente_id }}&canal_id={{ canal_id }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}">
+                                    &Uacute;ltima <span aria-hidden="true">&rarr;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                    </ul>
+                </center>
+            </td>
+            <th>
+                Pag. {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}
+            </th>
+        </table>
+    {% endif %}
+{% endblock %}

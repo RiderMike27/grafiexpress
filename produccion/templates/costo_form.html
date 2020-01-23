@@ -1,0 +1,582 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+{{ media }}
+{% endblock %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form{% endblock %}
+
+{% block extrajs %}
+    <script type="text/javascript" src="{% static 'js/autoNumeric.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/decimales.js' %}"></script>
+
+    <script type="text/javascript">
+    jQuery(function($) {
+        $('.auto').autoNumeric('init');
+    });
+    </script>
+{% endblock %}
+
+{% if not is_popup %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; {% if has_change_permission %}<a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %}
+&rsaquo; {% if add %}{% trans 'Add' %} {{ opts.verbose_name }}{% else %}{{ original|truncatewords:"18" }}{% endif %}
+</div>
+{% endblock %}
+{% endif %}
+
+{% block content %}<div id="content-main">
+{% block object-tools %}
+{% if change %}{% if not is_popup %}
+  <ul class="object-tools">
+    {% block object-tools-items %}
+    <li>
+        {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+        <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
+    </li>
+    {% if has_absolute_url %}<li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>{% endif %}
+    {% endblock %}
+  </ul>
+{% endif %}{% endif %}
+{% endblock %}
+<form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}{% block form_top %}{% endblock %}
+<div>
+{% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1" />{% endif %}
+{% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}" />{% endif %}
+{% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+{% if errors %}
+    <p class="errornote">
+    {% if errors|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+    </p>
+    {{ adminform.form.non_field_errors }}
+{% endif %}
+
+{% block field_sets %}
+{% for fieldset in adminform %}
+  {% include "admin/includes/fieldset.html" %}
+{% endfor %}
+{% endblock %}
+
+{% block after_field_sets %}{% endblock %}
+
+{% block inline_field_sets %}
+{% for inline_admin_formset in inline_admin_formsets %}
+    {% include inline_admin_formset.opts.template %}
+{% endfor %}
+<div align="center">
+    <label for="id_total"> TOTAL GENERAL </label>
+    <input id="id_total" maxlength="100" name="total" type="text" readonly>
+
+    <label for="id_iva"> IVA 10% </label>
+    <input id="id_iva" maxlength="100" name="iva" type="text" readonly>
+
+</div>
+{% endblock %}
+
+{% block after_related_objects %}{% endblock %}
+
+{% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+
+{% block admin_change_form_document_ready %}
+    <script type="text/javascript">
+        (function($) {
+            $(document).ready(function() {
+                $('.add-another').click(function(e) {
+                    e.preventDefault();
+                    showAddAnotherPopup(this);
+                });
+
+                // quitar coma decimal y separadores de miles antes del submit
+                $('form input[type=submit]').click(function(e) {
+                    $('.auto').each(function (){
+                        $(this).val(($(this).val()!='')?unformat(document.getElementById(this.id.toString())):'');
+                    });
+                });
+
+                // recalcular totales al marcar o desmarcar algo como borrado
+                $('form input[type=checkbox]').click(function(e) {
+                        calcular_total();
+                });
+
+                // recalcular totales al borrar un item de un detalle no guardador (con botoncito 'x' )
+                $('.inline-deletelink').click(function() {
+                    calcular_total();
+                });
+
+                // recargar el plugin de autonumeric al crear una nueva fila
+                $('.add-row').click(function() {
+                    jQuery(function($) {
+                        $('.auto').autoNumeric('init');
+                    });
+                });
+
+                // traer datos por AJAX
+                $('select').change(function(){
+                    if( $(this).attr("id").toString() == "id_detalle_orden_de_trabajo" ){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_orden_de_trabajo").val("");
+                            $("#id_cantidad").val("");
+                            $("#id_presupuesto").val("");
+                            $("#id_cliente").val("");
+                            $("#id_vendedor").val("");                            
+                            $("#id_fecha").val("");
+                            $("#id_papelcosto_set-0-tipo").val("");
+                            $("#id_papelcosto_set-0-cantidad").val("");
+                            $("#id_papelcosto_set-0-gramaje").val("");
+                            $("#id_papelcosto_set-0-resma").val("");
+                            $("#id_papelcosto_set-0-precio_unitario").val("");
+
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'dotid' : valueSelected },
+                            url : "/admin/produccion/getdetalleordendetrabajo/",
+                            type : "get",
+                            success : function(data){
+                                $("#id_orden_de_trabajo").val(data[0].ot);
+                                $("#id_cantidad").val(data[0].cantidad);
+                                $("#id_presupuesto").val(data[0].presupuesto);
+                                $("#id_cliente").val(data[0].cliente);
+                                console.log(data[0].vendedor);
+                                $("#id_vendedor").val(data[0].vendedor);
+                                $("#id_fecha").val(data[0].fecha);
+                                $("#id_papelcosto_set-0-tipo").val(data[0].descripcion);
+                                //$("#id_papelcosto_set-0-cantidad").val(data[0].detallecantidad);
+                                $("#id_papelcosto_set-0-gramaje").val(data[0].gramaje);
+                                $("#id_papelcosto_set-0-resma").val(data[0].resma);
+                                $("#id_papelcosto_set-0-precio_unitario").val(data[0].precio);
+                                calcular_total();
+                            }
+                        });
+                    } else {
+                        vector = $(this).attr("id").split("-")
+                        if(vector[2] == "maquina"){
+                            var optionSelected = $(this).find("option:selected");
+                            var valueSelected  = optionSelected.val();
+                            if(!valueSelected){
+                                $("#id_preprensacosto_set-" + vector[1] + "-precio_unitario").val("");
+                                $("#id_preprensacosto_set-" + vector[1] + "-cantidad").val("");
+                                calcular_total();
+                                return
+                            }
+                            $.ajax({
+                                data : {'maquinaid' : valueSelected },
+                                url : "/admin/maquinaria/getmaquina",
+                                type : "get",
+                                success : function(data){
+                                    console.log(data[0].precio);
+                                    $("#id_preprensacosto_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                    //calcular_total();
+                                }
+                            });
+                        }
+                    } 
+
+                });
+
+                // calcular totales al editar campos numericos
+                $('.auto').keyup(function(){
+                    calcular_total();
+                });
+
+                // ejecutar la primera vez
+                setear_totales();
+
+
+            {% if adminform and add %}
+                $('form#{{ opts.model_name }}_form :input:visible:enabled:first').focus()
+            {% endif %}
+            });
+        })(django.jQuery);
+        /*
+            setear campos iniciales
+        */
+        function setear_totales(){
+
+            $('#id_papelcosto_set-total').val( $('#id_total_papel').val() );
+            $('#id_preprensacosto_set-total').val( $('#id_total_preprensa').val() );
+            $('#id_troquelcosto_set-total').val( $('#id_total_troquel').val() );
+            $('#id_posprensaserviciocosto_set-total').val( $('#id_total_posprensaservicio').val() );
+            $('#id_posprensamaterialcosto_set-total').val( $('#id_total_posprensamaterial').val() );
+            $('#id_posprensaotroserviciocosto_set-total').val( $('#id_total_posprensaotroservicio').val() );
+            $('#id_datosdebolsacosto_set-total').val( $('#id_total_datosdebolsa').val() );
+            $('#id_revistacosto_set-total').val( $('#id_total_revista').val() );
+            $('#id_compuestocosto_set-total').val( $('#id_total_compuesto').val() );
+            $('#id_plastificadocosto_set-total').val( $('#id_total_plastificado').val() );
+            $('#id_otrogastocosto_set-total').val( $('#id_total_otrogasto').val() );
+
+            $('#id_total').val( $('#id_total_general').val() );
+            $('#id_iva').val( $('#id_total_iva').val() );
+        }
+
+        /* 
+            calculo de los totales 
+        */
+        function calcular_total_papel(){
+            var total_general = 0;
+            $('.papel_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var cantidad = ($('#id_papelcosto_set-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById('id_papelcosto_set-'+vector[1]+'-cantidad')):'0';
+
+                var precio = ($('#id_papelcosto_set-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById('id_papelcosto_set-'+vector[1]+'-precio_unitario')):'0';
+
+                var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                if( (cantidad!='0') && (precio!='0') ){
+                    $('#id_papelcosto_set-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") )
+                    format(document.getElementById('id_papelcosto_set-'+vector[1]+'-subtotal'));
+                } else {
+                    $('#id_papelcosto_set-'+vector[1]+'-subtotal').val('');
+                }
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += subtotal
+                }
+            });
+
+            $('#id_papelcosto_set-total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_papelcosto_set-total'));
+        }
+
+
+        function calcular_total_preprensa(){
+            var total_general = 0;
+            $('.preprensa_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var cantidad = ($('#id_preprensacosto_set-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById('id_preprensacosto_set-'+vector[1]+'-cantidad')):'0';
+
+                var precio = ($('#id_preprensacosto_set-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById('id_preprensacosto_set-'+vector[1]+'-precio_unitario')):'0';
+
+                var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                if( (cantidad!='0') && (precio!='0') ){
+                    $('#id_preprensacosto_set-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") )
+                    format(document.getElementById('id_preprensacosto_set-'+vector[1]+'-subtotal'));
+                } else {
+                    $('#id_preprensacosto_set-'+vector[1]+'-subtotal').val('');
+                }
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += subtotal
+                }
+            });
+
+            $('#id_preprensacosto_set-total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_preprensacosto_set-total'));
+        }
+
+
+        function calcular_total_troquel(){
+            var total_general = 0;
+            $('.troquel_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var precio = ($('#id_troquelcosto_set-'+vector[1]+'-precio').val()!='')?unformat(document.getElementById('id_troquelcosto_set-'+vector[1]+'-precio')):'0';
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += precio
+                }
+            });
+
+            $('#id_troquelcosto_set-total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_troquelcosto_set-total'));
+        }
+
+
+        function calcular_total_posprensaservicio(){
+            var total_general = 0;
+            $('.posprensaservicio_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var cantidad = ($('#id_posprensaserviciocosto_set-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById('id_posprensaserviciocosto_set-'+vector[1]+'-cantidad')):'0';
+
+                var precio = ($('#id_posprensaserviciocosto_set-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById('id_posprensaserviciocosto_set-'+vector[1]+'-precio_unitario')):'0';
+
+                var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                if( (cantidad!='0') && (precio!='0') ){
+                    $('#id_posprensaserviciocosto_set-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") )
+                    format(document.getElementById('id_posprensaserviciocosto_set-'+vector[1]+'-subtotal'));
+                } else {
+                    $('#id_posprensaserviciocosto_set-'+vector[1]+'-subtotal').val('');
+                }
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += subtotal
+                }
+            });
+
+            $('#id_posprensaserviciocosto_set-total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_posprensaserviciocosto_set-total'));
+        }
+
+
+        function calcular_total_posprensamaterial(){
+            var total_general = 0;
+            $('.posprensamaterial_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var cantidad = ($('#id_posprensamaterialcosto_set-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById('id_posprensamaterialcosto_set-'+vector[1]+'-cantidad')):'0';
+
+                var precio = ($('#id_posprensamaterialcosto_set-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById('id_posprensamaterialcosto_set-'+vector[1]+'-precio_unitario')):'0';
+
+                var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                if( (cantidad!='0') && (precio!='0') ){
+                    $('#id_posprensamaterialcosto_set-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") )
+                    format(document.getElementById('id_posprensamaterialcosto_set-'+vector[1]+'-subtotal'));
+                } else {
+                    $('#id_posprensamaterialcosto_set-'+vector[1]+'-subtotal').val('');
+                }
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += subtotal
+                }
+            });
+
+            $('#id_posprensamaterialcosto_set-total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_posprensamaterialcosto_set-total'));
+        }
+
+
+        function calcular_total_posprensaotroservicio(){
+            var total_general = 0;
+            $('.posprensaotroservicio_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var cantidad = ($('#id_posprensaotroserviciocosto_set-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById('id_posprensaotroserviciocosto_set-'+vector[1]+'-cantidad')):'0';
+
+                var precio = ($('#id_posprensaotroserviciocosto_set-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById('id_posprensaotroserviciocosto_set-'+vector[1]+'-precio_unitario')):'0';
+
+                var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                if( (cantidad!='0') && (precio!='0') ){
+                    $('#id_posprensaotroserviciocosto_set-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") )
+                    format(document.getElementById('id_posprensaotroserviciocosto_set-'+vector[1]+'-subtotal'));
+                } else {
+                    $('#id_posprensaotroserviciocosto_set-'+vector[1]+'-subtotal').val('');
+                }
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += subtotal
+                }
+            });
+
+            $('#id_posprensaotroserviciocosto_set-total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_posprensaotroserviciocosto_set-total'));
+        }
+
+
+        function calcular_total_datosdebolsa(){
+            var total_general = 0;
+            $('.datosdebolsa_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var cantidad = ($('#id_datosdebolsacosto_set-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById('id_datosdebolsacosto_set-'+vector[1]+'-cantidad')):'0';
+
+                var precio = ($('#id_datosdebolsacosto_set-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById('id_datosdebolsacosto_set-'+vector[1]+'-precio_unitario')):'0';
+
+                var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                if( (cantidad!='0') && (precio!='0') ){
+                    $('#id_datosdebolsacosto_set-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") )
+                    format(document.getElementById('id_datosdebolsacosto_set-'+vector[1]+'-subtotal'));
+                } else {
+                    $('#id_datosdebolsacosto_set-'+vector[1]+'-subtotal').val('');
+                }
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += subtotal
+                }
+            });
+
+            $('#id_datosdebolsacosto_set-total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_datosdebolsacosto_set-total'));
+        }
+
+
+        function calcular_total_revista(){
+            var total_general = 0;
+            $('.revista_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var cantidad = ($('#id_revistacosto_set-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById('id_revistacosto_set-'+vector[1]+'-cantidad')):'0';
+
+                var precio = ($('#id_revistacosto_set-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById('id_revistacosto_set-'+vector[1]+'-precio_unitario')):'0';
+
+                var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                if( (cantidad!='0') && (precio!='0') ){
+                    $('#id_revistacosto_set-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") )
+                    format(document.getElementById('id_revistacosto_set-'+vector[1]+'-subtotal'));
+                } else {
+                    $('#id_revistacosto_set-'+vector[1]+'-subtotal').val('');
+                }
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += subtotal
+                }
+            });
+
+            $('#id_revistacosto_set-total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_revistacosto_set-total'));
+        }
+
+
+        function calcular_total_compuesto(){
+            var total_general = 0;
+            $('.compuesto_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var cantidad = ($('#id_compuestocosto_set-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById('id_compuestocosto_set-'+vector[1]+'-cantidad')):'0';
+
+                var precio = ($('#id_compuestocosto_set-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById('id_compuestocosto_set-'+vector[1]+'-precio_unitario')):'0';
+
+                var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                if( (cantidad!='0') && (precio!='0') ){
+                    $('#id_compuestocosto_set-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") )
+                    format(document.getElementById('id_compuestocosto_set-'+vector[1]+'-subtotal'));
+                } else {
+                    $('#id_compuestocosto_set-'+vector[1]+'-subtotal').val('');
+                }
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += subtotal
+                }
+            });
+
+            $('#id_compuestocosto_set-total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_compuestocosto_set-total'));
+        }
+
+
+        function calcular_total_plastificado(){
+            var total_general = 0;
+            $('.plastificado_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var cantidad = ($('#id_plastificadocosto_set-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById('id_plastificadocosto_set-'+vector[1]+'-cantidad')):'0';
+
+                var precio = ($('#id_plastificadocosto_set-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById('id_plastificadocosto_set-'+vector[1]+'-precio_unitario')):'0';
+
+                var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                if( (cantidad!='0') && (precio!='0') ){
+                    $('#id_plastificadocosto_set-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") )
+                    format(document.getElementById('id_plastificadocosto_set-'+vector[1]+'-subtotal'));
+                } else {
+                    $('#id_plastificadocosto_set-'+vector[1]+'-subtotal').val('');
+                }
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += subtotal
+                }
+            });
+
+            $('#id_plastificadocosto_set-total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_plastificadocosto_set-total'));
+        }
+
+
+        function calcular_total_otrogasto(){
+            var total_general = 0;
+            $('.otrogasto_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var cantidad = ($('#id_otrogastocosto_set-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById('id_otrogastocosto_set-'+vector[1]+'-cantidad')):'0';
+
+                var precio = ($('#id_otrogastocosto_set-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById('id_otrogastocosto_set-'+vector[1]+'-precio_unitario')):'0';
+
+                var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                if( (cantidad!='0') && (precio!='0') ){
+                    $('#id_otrogastocosto_set-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") )
+                    format(document.getElementById('id_otrogastocosto_set-'+vector[1]+'-subtotal'));
+                } else {
+                    $('#id_otrogastocosto_set-'+vector[1]+'-subtotal').val('');
+                }
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += subtotal
+                }
+            });
+
+            $('#id_otrogastocosto_set-total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_otrogastocosto_set-total'));
+        }
+
+
+
+
+        function calcular_total(){
+            calcular_total_papel();
+            calcular_total_preprensa();
+            calcular_total_troquel();
+            calcular_total_posprensaservicio();
+            calcular_total_posprensamaterial();
+            calcular_total_posprensaotroservicio();
+            calcular_total_datosdebolsa();
+            calcular_total_compuesto();
+            calcular_total_revista();
+            calcular_total_plastificado();
+            calcular_total_otrogasto();
+
+
+            var total_papel = ($('#id_papelcosto_set-total').val()!='')?unformat(document.getElementById('id_papelcosto_set-total')):'0';
+            
+            var total_preprensa = ($('#id_preprensacosto_set-total').val()!='')?unformat(document.getElementById('id_preprensacosto_set-total')):'0';
+            
+            var total_troquel = ($('#id_troquelcosto_set-total').val()!='')?unformat(document.getElementById('id_troquelcosto_set-total')):'0';
+
+            var total_posprensaservicio = ($('#id_posprensaserviciocosto_set-total').val()!='')?unformat(document.getElementById('id_posprensaserviciocosto_set-total')):'0';
+
+            var total_posprensamaterial = ($('#id_posprensamaterialcosto_set-total').val()!='')?unformat(document.getElementById('id_posprensamaterialcosto_set-total')):'0';
+
+            var total_posprensaotroservicio = ($('#id_posprensaotroserviciocosto_set-total').val()!='')?unformat(document.getElementById('id_posprensaotroserviciocosto_set-total')):'0';
+
+            var total_datosdebolsa = ($('#id_datosdebolsacosto_set-total').val()!='')?unformat(document.getElementById('id_datosdebolsacosto_set-total')):'0';
+
+            var total_revista = ($('#id_revistacosto_set-total').val()!='')?unformat(document.getElementById('id_revistacosto_set-total')):'0';
+
+            var total_compuesto = ($('#id_compuestocosto_set-total').val()!='')?unformat(document.getElementById('id_compuestocosto_set-total')):'0';
+
+            var total_plastificado = ($('#id_plastificadocosto_set-total').val()!='')?unformat(document.getElementById('id_plastificadocosto_set-total')):'0';
+
+            var total_otrogasto = ($('#id_otrogastocosto_set-total').val()!='')?unformat(document.getElementById('id_otrogastocosto_set-total')):'0';
+
+            var total_general = parseFloat(total_papel) + parseFloat(total_preprensa) + parseFloat(total_troquel) + parseFloat(total_posprensaservicio) + parseFloat(total_posprensamaterial) + parseFloat(total_posprensaotroservicio) + parseFloat(total_datosdebolsa) + parseFloat(total_revista) + parseFloat(total_compuesto) + parseFloat(total_plastificado) + parseFloat(total_otrogasto)
+
+            $('#id_total').val( parseFloat(total_general).toString().replace(".",",") );
+            format(document.getElementById('id_total'));
+
+            var iva10 = parseFloat(total_general)/11
+
+            $('#id_iva').val( parseInt(iva10).toString().replace(".",",") );
+            format(document.getElementById('id_iva'));
+            
+        }
+
+    </script>
+{% endblock %}
+
+{# JavaScript for prepopulated fields #}
+{% prepopulated_fields_js %}
+
+</div>
+</form></div>
+{% endblock %}

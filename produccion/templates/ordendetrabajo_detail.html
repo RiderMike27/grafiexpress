@@ -1,0 +1,260 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block content %}
+<h2>Orden de Trabajo Nro.: {{ object.id | floatformat:"0"| intcomma}} {% if object.anulada %} <button class="btn danger" style="background-color: #f44336; color: white; font-weight: bold">ANULADA</button> {% endif %}</h2>
+    <h4>Estado de producción: {% if object.estado_produccion == 'no_iniciado' %} No iniciado {% elif object.estado_produccion == 'en_proceso' %} En proceso {% elif object.estado_produccion == 'finalizado' %} Finalizado {% endif %}</h4>
+<table class="table table-striped table-filter" summary="Datos de la orden de trabajo.">
+	<tbody>
+		<tr>
+			<th scope="row"> Nombre </th>
+			<td> {{ object.nombre }} </td>
+		</tr>
+
+
+		<tr>
+			<th scope="row"> Numero de presupuesto </th>
+			<td> {{ object.presupuesto_numero }} </td>
+		</tr>
+
+
+		<tr>
+			<th scope="row"> Item de presupuesto </th>
+			<td> {{ object.presupuesto_item }} </td>
+		</tr>
+    </tbody>
+    <tbody>
+		<tr>
+			<th scope="row"> Cliente </th>
+			<td> {{ object.cliente }} </td>
+		</tr>
+        {% if object.marca %}
+            <tr>
+                <th scope="row"> Marca </th>
+                <td> {{ object.marca }} </td>
+            </tr>
+        {% endif %}
+
+        {% if object.contacto %}
+		<tr>
+			<th scope="row"> Contacto </th>
+			<td> {{ object.contacto }} </td>
+		</tr>
+        {% endif %}
+
+		<tr>
+			<th scope="row"> Vendedor </th>
+			<td> {{ object.vendedor }} </td>
+		</tr>
+    </tbody>
+    <tbody>
+        {% if object.cliente.requiere_orden_de_compra_del_proveedor %}
+            <tr>
+                <th scope="row"> Orden de compra del cliente </th>
+                <td> {{ object.orden_de_compra_del_cliente }} </td>
+            </tr>
+        {% endif %}
+
+        <tr>
+			<th scope="row"> Fecha de ingreso </th>
+			<td> {{ object.fecha_de_ingreso }} </td>
+		</tr>
+
+        {% if  perms.produccion.view_fecha_solicitada %}
+            <tr>
+                <th scope="row"> Fecha solicitada </th>
+                <td> {% if object.fecha_solicitada %} object.fecha_solicitada {% else %} - {% endif %} </td>
+            </tr>
+        {% endif %}
+        <tr>
+            <th scope="row"> Observaciones </th>
+            <td> {% if object.observaciones %} object.observaciones {% else %} Sin Observaciones {% endif %} </td>
+        </tr>
+    </tbody>
+</table>
+
+
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <table class="table table-striped table-filter" summary="Datos de la Orden de trabajo.">
+                <body>
+                    <h4> <font style="font-weight: bold">Categoria:</font> {{ object.categoria }}</h4><h5>{% if object.subcategoria %}<font style="font-weight: bold">Subcategoria:</font> {{ object.subcategoria }} {% endif %}</h5>
+                    <tr>
+                        <th style="font-size: medium"> Cantidad Total </th>
+                        <td>
+                            <blockquote> {{ object.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }} </blockquote>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="font-size: medium"> Precio unitario </th>
+                        <td>
+                            <blockquote>{{ object.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }} &#x20B2</blockquote>
+                        </td>
+                    </tr>
+                     <tr>
+                        <th style="font-size: large"> Total </th>
+                        <td style="font-size: large"> {{ object.get_total|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }} &#x20B2</td>
+                    </tr>
+                </body>
+            </table>
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <table class="table table-striped table-filter" summary="Datos de la Orden de trabajo.">
+
+                <tr>
+                    <th scope="row"> Cambios </th>
+                    <th scope="row"> Materiales compuestos </th>
+                    <th scope="row"> Prueba de color </th>
+                    <th scope="row"> Muestra de color </th>
+                    <th scope="row"> Prueba de producto </th>
+                    <th scope="row"> Muestra de producto </th>
+                    <th scope="row"> Repeticion </th>
+                    <th scope="row"> Buscar sobrante </th>
+                    <th scope="row"> Originales </th>
+                </tr>
+
+                <tr>
+                    <td>{% if object.cambios %} Si {% else %} No {% endif %} </td>
+                    <td> {% if object.materiales_compuestos %}  Si {% else %} No {% endif %} </td>
+                    <td> {% if object.prueba_de_color %} Si {% else %} No {% endif %} </td>
+                    <td> {% if object.muestra_de_color %} Si {% else %} No {% endif %} </td>
+                    <td> {% if object.prueba_de_producto %} Si {% else %} No {% endif %} </td>
+                    <td> {% if object.muestra_de_producto %} Si {% else %} No {% endif %} </td>
+                    <td> {% if object.repeticion %} Si {% else %} No {% endif %} </td>
+                    <td> {% if object.buscar_sobrante %} Si {% else %} No {% endif %} </td>
+                    <td> {{ object.originales }} </td>
+                </tr>
+
+            </table>
+        </div>
+    </div>
+
+
+{% if detalles %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h2>Detalle de la Orden de Trabajo</h2></caption>
+
+	<thead>
+		<tr>
+			<th>Descripcion</th>
+			<th>Cantidad</th>
+            <th>Dimension en X</th>
+            <th>Dimension en Y</th>
+            <th>Dimension en Z</th>
+            <th>Material</th>
+            <th>Seleccion color de frente</th>
+            <th>Seleccion color de dorso</th>
+            <th>Pantone Color de frente</th>
+            <th>Pantone Color de dorso</th>
+            <th>Observaciones</th>
+        </tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles %}
+		<tr>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.dimensiones_x|floatformat:"2"|intcomma|default_if_none:"&nbsp;"  }}</td>
+            <td>{{ detalle.dimensiones_y|floatformat:"2"|intcomma|default_if_none:"&nbsp;"  }}</td>
+            <td>{{ detalle.dimensiones_z|floatformat:"2"|intcomma|default_if_none:"&nbsp;"  }}</td>
+            <td>{{ detalle.material }}</td>
+            <td>{{ detalle.color_seleccion_frente }}</td>
+            <td>{{ detalle.color_seleccion_dorso }}</td>
+            <td>{{ detalle.color_pantone_frente }}</td>
+            <td>{{ detalle.color_pantone_dorso }}</td>
+            <td>{{ detalle.observaciones }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+{% if remisiones %}
+    <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+    <caption>
+        <h2>Remisiones</h2>| Entregados: {{ object.entregado|floatformat:"0"|intcomma|default_if_none:"&nbsp;" }} - Restantes: {{ object.restante|floatformat:"0"|intcomma|default_if_none:"&nbsp;" }} |
+    </caption>
+        <thead>
+            <tr>
+                <th>Fecha de emision</th>
+                <th>Numero de remision</th>
+                <th>Cantidad en remision</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for remision in remisiones %}
+                <tr>
+                    <td>{{ remision.fecha_de_emision }}</td>
+                    <td><a href="/admin/ventas/remision/{{ remision.id }}/detail/"> {{ remision.numero_de_remision }} </a></td>
+                    {% if detalles_de_remisiones %}
+                        <td>
+                            {% for detalle_de_remision in detalles_de_remisiones %}
+                                {% if detalle_de_remision.remision == remision %}
+                                    {{ detalle_de_remision.cantidad | floatformat:"0" | intcomma }}
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                    {% elif detalles_de_remisiones2 %}
+                        <td>
+                            {% for detalle_de_remision in detalles_de_remisiones2 %}
+                                {% if detalle_de_remision.remision == remision %}
+                                    {{ detalle_de_remision.cantidad | floatformat:"0" | intcomma }}
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+
+                    {% endif %}
+                </tr>
+
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
+{% if ventas %}
+    <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+    <caption>
+        <h2>Facturaciones</h2>| Facturadas: {{ object.cantidad_facturada|floatformat:"0"|intcomma|default_if_none:"&nbsp;" }} - Pendientes: {{ object.cantidad_no_facturada|floatformat:"0"|intcomma|default_if_none:"&nbsp;" }} |
+    </caption>
+        <thead>
+            <tr>
+                <th>Fecha de emision</th>
+                <th>Numero de factura</th>
+                <th>Cantidad en factura</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for venta in ventas %}
+                <tr>
+                    <td>{{ venta.fecha_de_emision }}</td>
+                    <td><a href="/admin/ventas/venta/{{ venta.id }}/detail/"> {{ venta.numero_de_factura }} </a></td>
+                    {% if detalles_de_ventas %}
+                        <td>
+                            {% for detalle_de_venta in detalles_de_ventas %}
+                                {% if detalle_de_venta.venta == venta %}
+                                    {{ detalle_de_venta.cantidad | floatformat:"0" | intcomma }}
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                    {% elif detalles_de_ventas2 %}
+                        <td>
+                            {% for detalle_de_venta in detalles_de_ventas2 %}
+                                {% if detalle_de_venta.venta == venta %}
+                                    {{ detalle_de_venta.cantidad | floatformat:"0" | intcomma }}
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
+<button type="button" class="btn btn-primary" onclick="window.history.back(); return false;">Volver</button>
+
+{% endblock %}
+

@@ -1,0 +1,361 @@
+{% extends 'admin/base_site.html'%}
+{% load i18n admin_static %}
+{% load my_tags %}
+{% load humanize %}
+
+{% block extrastyle %}
+    <link rel="stylesheet" href="{% static 'chosen/chosen.css' %}">
+    <link rel="stylesheet" href="{% static 'chosen/docsupport/prism.css' %}">
+{% endblock %}
+
+{% block extrajs %}
+    <script src="{% static 'chosen/chosen.jquery.js' %}"></script>
+    <script src="{% static 'chosen/docsupport/prism.js' %}"></script>
+
+    <script type="text/javascript" src="{% static 'js/jquery.maskedinput.min.js' %}"></script>
+
+
+    <script type="text/javascript">
+        $(".chosen-select").chosen({
+            disable_search_threshold: 0,
+            no_results_text: "Sin resultados..",
+            width: "300px",
+            allow_single_deselect: true
+        });
+        $('.chosen-select').trigger('chosen:updated');
+
+        jQuery(function($) {
+            $(".date").mask("99/99/9999",{placeholder:"dd/mm/aaaa"});
+
+        });
+
+
+    </script>
+{% endblock %}
+
+{% block content %}
+    <form class="form" method="get">
+        <h1>Lista de Ordenes de Trabajo</h1>
+        <center>
+            <dl>
+                <table class="table-filter table table-bordered table-stripped">
+                    <tbody>
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Buscar:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="search-query" placeholder="Numero o Descripcion del trabajo.." name="q" value="{{ q }}">
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Cliente:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select class="chosen-select" data-placeholder="Seleccione un cliente.." name="cliente_id" value="{{ cliente_id }}" onchange="this.form.submit();">
+                                <option value=""></option>
+                                {% for cliente in clientes %}
+                                    <option {% if cliente.pk == cliente_id %} selected {% endif %} value="{{ cliente.id }}">{{ cliente }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+
+
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Estado en orden de compra:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select name="estado" value="{{ estado }}" onchange="this.form.submit();">
+
+                                <option {% if 'TODOS' in estado %} selected {% endif %} value="TODOS">----------</option>
+                                <option {% if 'PENDIENTE' in estado %} selected {% endif %} value="PENDIENTE">PENDIENTES</option>
+                                <option {% if 'PROCESADO' in estado %} selected {% endif %} value="PROCESADO">PROCESADOS</option>
+
+                            </select>
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Estado de entrega:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select name="entregado" value="{{ entregado }}" onchange="this.form.submit();">
+                                <option {% if 'TODOS' in entregado %} selected {% endif %} value="TODOS">----------</option>
+                                <option {% if 'NO ENTREGADO' in entregado %} selected {% endif %} value="NO ENTREGADO">NO ENTREGADO</option>
+                                <option {% if 'ENTREGADO PARCIALMENTE' in entregado %} selected {% endif %} value="ENTREGADO PARCIALMENTE">ENTREGADO PARCIALMENTE</option>
+                                <option {% if 'ENTREGADO TOTALMENTE' in entregado %} selected {% endif %} value="ENTREGADO TOTALMENTE">ENTREGADO TOTALMENTE</option>
+                            </select>
+                        </td>
+                    </tr>
+
+
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Fecha de ingreso desde:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_de_ingreso_desde" value="{{ fecha_de_ingreso_desde }}">
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Fecha de ingreso hasta:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_de_ingreso_hasta" value="{{ fecha_de_ingreso_hasta }}">
+                        </td>
+                    </tr>
+
+
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Fecha solicitada desde:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_solicitada_desde" value="{{ fecha_solicitada_desde }}">
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Fecha solicitada hasta:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                             {% if perms.produccion.view_fecha_solicitada %}
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_solicitada_hasta" value="{{ fecha_solicitada_hasta }}">
+                        {% endif %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Vendedor:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            {% if perms.produccion.view_all_ots %}
+                                <select class="chosen-select" data-placeholder="Seleccione un vendedor.." name="vendedor_id" value="{{ vendedor_id }}" onchange="this.form.submit();">
+                                    <option value=""></option>
+                                    {% for vendedor in vendedores %}
+                                        <option {% if vendedor.pk == vendedor_id %} selected {% endif %} value="{{ vendedor.id }}">{{ vendedor }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% else %}
+                                <select class="chosen-select" name="vendedor_id" value="{{ vendedor_id }}" onloadstart="this.form.submit();">
+                                    <option value="{{ usuario_id }}">{{ usuario_id }}</option>
+                                </select>
+                            {% endif %}
+                        </td>
+                        <th style="vertical-align:middle">
+                            <strong> Estado de facturacion:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select name="facturado" value="{{ facturado }}" onchange="this.form.submit();">
+                                <option {% if 'TODOS' in facturado %} selected {% endif %} value="TODOS">----------</option>
+                                <option {% if 'FACTURADO' in facturado %} selected {% endif %} value="FACTURADO">FACTURADO</option>
+                                <option {% if 'NO FACTURADO' in facturado %} selected {% endif %} value="NO FACTURADO">NO FACTURADO</option>
+                                <option {% if 'PARCIALMENTE' in facturado %} selected {% endif %} value="PARCIALMENTE">PARCIALMENTE</option>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Anulados: </strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select name="anulada" value="{{ anulada }}" onchange="this.form.submit();">
+                                <option {% if 'TODOS' in anulada %} selected {% endif %} value="TODOS">----------</option>
+                                <option {% if 'SI' in anulada %} selected {% endif %} value="SI">SI</option>
+                                <option {% if 'NO' in anulada %} selected {% endif %} value="NO">NO</option>
+                            </select>
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Requiere OC: </strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select name="cliente_requiere_oc" value="{{ cliente_requiere_oc }}" onchange="this.form.submit();">
+                                <option {% if 'TODOS' in cliente_requiere_oc %} selected {% endif %} value="TODOS">-----------</option>
+                                <option {% if 'SI' in cliente_requiere_oc %} selected {% endif %} value="SI">SI</option>
+                                <option {% if 'NO' in cliente_requiere_oc %} selected {% endif %} value="NO">NO</option>
+                            </select>
+                        </td>
+
+
+                        <th style="border-top :3px solid white; border-right :3px solid white; border-bottom :3px solid white;">
+                            <a class="btn btn-info" href="/admin/produccion/ordendetrabajo/" title="Limpiar Filtros">
+                                <i class="fa fa-undo"></i>
+                            </a>
+                            <input type="submit" value="Buscar" class="btn btn-success" hidden="hidden" style="display: none">
+                        </th>
+                    </tr>
+                    </tbody>
+                </table>
+            </dl>
+        </center>
+
+        <div id="next_button" align="right">
+            <button onclick="this.form.submit();" class="btn btn-success" name="excel" value="excel" type="submit" title="Exportar a Excel">
+                <i class="fa fa-file-excel-o"></i>
+            </button>
+
+            {% if perms.produccion.add_ordendetrabajo %}
+                <button type="button" class="btn btn-primary" onclick="location.href='/admin/produccion/ordendetrabajo/add/';" title="Agregar Venta">
+                    <span class="glyphicon glyphicon-plus"></span>
+                </button>
+            {% endif %}
+
+        </div>
+    </form>
+
+
+    <div class="row">
+         <div class="col-sm-8">
+            <h2>Pendientes de facturar  = {% if total_sin_facturar %} {{ total_sin_facturar|separador_miles }} {% else %} 0 {% endif %}</h2>
+        </div>
+        <div class="col-sm-3">
+            <h3>({{ conteo_ots }})ots seleccionadas</h3>
+        </div>
+	</div>
+
+    <div align="center">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Numero</th>
+                <th>Descripcion</th>
+                <th>Cliente (requiere OC)</th>
+                <th>Fecha de ingreso</th>
+                {% if perms.produccion.fecha_solicitada %}
+                    <th>Fecha solicitada</th>
+                {% endif %}
+                <th>Estado en OC</th>
+                <th>Estado de entrega</th>
+                <th>Cant. entregada</th>
+                <th>Cant. restante</th>
+                <th>Cant. total</th>
+                <th>No facturado</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for ordendetrabajo in object_list %}
+                <tr {% if ordendetrabajo.prueba_de_color == True or ordendetrabajo.prueba_de_producto == True %} {% if ordendetrabajo.prueba_realizada == True %} class="bg-success" {% else %} class="bg-danger" {% endif %}{% endif %}>
+                    <td>{{ ordendetrabajo.id|separador_miles }}</td>
+                    <td>{{ ordendetrabajo.nombre }}</td>
+                    <td>{{ ordendetrabajo.cliente }}
+                        {% if ordendetrabajo.cliente.requiere_orden_de_compra_del_proveedor %}(Si)
+                            {% else %}(No)
+                        {% endif %}</td>
+                    <td>{{ ordendetrabajo.fecha_de_ingreso }}</td>
+                {% if perms.produccion.fecha_solicitada %}
+                    <td>{{ ordendetrabajo.fecha_solicitada }}</td>
+                {% endif %}
+                    <td>{{ ordendetrabajo.estado }}</td>
+                    <td>{{ ordendetrabajo.get_entregado_display }}</td>
+                    <td>{{ ordendetrabajo.entregado|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ ordendetrabajo.restante|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ ordendetrabajo.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ ordendetrabajo.cantidad_no_facturada|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>
+                        {% if perms.produccion.change_ordendetrabajo %}
+                            <button type="button" class="btn btn-warning btn-xs" onclick="location.href='/admin/produccion/ordendetrabajo/{{ ordendetrabajo.id }}/';" title="Editar">
+                                <i class="fa fa-pencil"></i>
+                            </button>
+                        {% endif %}
+
+                        {% if perms.produccion.delete_ordendetrabajo %}
+                            {% if ordendetrabajo.anulada == False %}
+                                <button type="button" class="btn btn-danger btn-xs" onclick="location.href='/admin/produccion/ordendetrabajo/{{ ordendetrabajo.id }}/delete/';" title="Anular">
+                                    <i class="fa fa-minus"></i>
+                                </button>
+                            {% endif %}
+                            {% if ordendetrabajo.anulada == True %}
+                                <button type="button" class="btn btn-default btn-xs" onclick="location.href='/admin/produccion/ordendetrabajo/{{ ordendetrabajo.id }}/undelete/';" title="Desanular">
+                                    <i class="fa fa-check"></i>
+                                </button>
+                            {% endif %}
+
+                        {% endif %}
+
+                        <button type="button" class="btn btn-info btn-xs" onclick="location.href='/admin/produccion/ordendetrabajo/{{ ordendetrabajo.id }}/detail/';" title="Detalle">
+                            <i class="fa fa-list-ol"></i>
+                        </button>
+
+                        <button type="button" class="btn btn-success btn-xs" onclick="location.href='/admin/produccion/ordendetrabajo/{{ ordendetrabajo.id }}/print/';" title="Imprimir">
+                            <i class="fa fa-print"></i>
+                        </button>
+
+
+
+                        {% if ordendetrabajo.prueba_de_color == True or ordendetrabajo.prueba_de_producto == True %}
+                            {% if ordendetrabajo.prueba_realizada == False %}
+                                <button type="button" class="btn btn-default btn-xs" onclick="location.href='/admin/produccion/ordendetrabajo/{{ ordendetrabajo.id }}/aprobar/';" title="marcar como aprobada">
+                                    <i class="fa fa-thumbs-up"></i>
+                                </button>
+                            {% else %}
+                                <button type="button" class="btn btn-default btn-xs" onclick="location.href='/admin/produccion/ordendetrabajo/{{ ordendetrabajo.id }}/desaprobar/';" title="marcar como desaprobada">
+                                    <i class="fa fa-thumbs-down"></i>
+                                </button>
+                            {% endif %}
+                        {% endif %}
+
+
+
+
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+        <table class="table">
+            <td>
+                <center>
+                    <ul class="pagination pagination-sm">
+                        {% if page_obj.has_previous %}
+                            <li class="previous">
+                                <a href="/admin/produccion/ordendetrabajo/?page={{ page_obj.previous_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&estado={{ estado }}&entregado={{ entregado }}&fecha_de_ingreso_desde={{ fecha_de_ingreso_desde }}&fecha_de_ingreso_hasta={{ fecha_de_ingreso_hasta }}&fecha_solicitada_desde={{ fecha_solicitada_desde }}&fecha_solicitada_hasta={{ fecha_solicitada_hasta }}&vendedor_id={{ vendedor_id }}&facturado={{ facturado }}&anulada={{ anulada }}&cliente_requiere_oc={{ cliente_requiere_oc }}">
+                                    <span aria-hidden="true">&larr;</span> Primera
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="/admin/produccion/ordendetrabajo/?page={{ page_obj.previous_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&estado={{ estado }}&entregado={{ entregado }}&fecha_de_ingreso_desde={{ fecha_de_ingreso_desde }}&fecha_de_ingreso_hasta={{ fecha_de_ingreso_hasta }}&fecha_solicitada_desde={{ fecha_solicitada_desde }}&fecha_solicitada_hasta={{ fecha_solicitada_hasta }}&vendedor_id={{ vendedor_id }}&facturado={{ facturado }}&anulada={{ anulada }}&cliente_requiere_oc={{ cliente_requiere_oc }}">
+                                    Anterior
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for page in page_obj.paginator.page_range|paginator_delimiter:page_obj.number %}
+                            <li>
+                                <a {% if page == page_obj.number %} class="active" style="background-color:#DD4814;color:white;" {% endif %} href="/admin/produccion/ordendetrabajo/?page={{ page }}&q={{ q }}&cliente_id={{ cliente_id }}&estado={{ estado }}&entregado={{ entregado }}&fecha_de_ingreso_desde={{ fecha_de_ingreso_desde }}&fecha_de_ingreso_hasta={{ fecha_de_ingreso_hasta }}&fecha_solicitada_desde={{ fecha_solicitada_desde }}&fecha_solicitada_hasta={{ fecha_solicitada_hasta }}&vendedor_id={{ vendedor_id }}&facturado={{ facturado }}&anulada={{ anulada }}&cliente_requiere_oc={{ cliente_requiere_oc }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li>
+                                <a href="/admin/produccion/ordendetrabajo/?page={{ page_obj.next_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&estado={{ estado }}&entregado={{ entregado }}&fecha_de_ingreso_desde={{ fecha_de_ingreso_desde }}&fecha_de_ingreso_hasta={{ fecha_de_ingreso_hasta }}&fecha_solicitada_desde={{ fecha_solicitada_desde }}&fecha_solicitada_hasta={{ fecha_solicitada_hasta }}&vendedor_id={{ vendedor_id }}&facturado={{ facturado }}&anulada={{ anulada }}&cliente_requiere_oc={{ cliente_requiere_oc }}">
+                                    Siguiente
+                                </a>
+                            </li>
+
+                            <li class="next">
+                                <a href="/admin/produccion/ordendetrabajo/?page={{ page_obj.paginator.num_pages}}&q={{ q }}&cliente_id={{ cliente_id }}&estado={{ estado }}&entregado={{ entregado }}&fecha_de_ingreso_desde={{ fecha_de_ingreso_desde }}&fecha_de_ingreso_hasta={{ fecha_de_ingreso_hasta }}&fecha_solicitada_desde={{ fecha_solicitada_desde }}&fecha_solicitada_hasta={{ fecha_solicitada_hasta }}&vendedor_id={{ vendedor_id }}&facturado={{ facturado }}&anulada={{ anulada }}&cliente_requiere_oc={{ cliente_requiere_oc }}">
+                                    &Uacute;ltima <span aria-hidden="true">&rarr;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                    </ul>
+                </center>
+            </td>
+            <th>
+                Pag. {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}
+            </th>
+        </table>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "admin/base_site.html" %}
+ 
+{% block extrajs %}
+    <script>
+	    $(document).ready(function() {
+	        $('form button[type=submit]').click(function(e) {
+	        	url = "{{ request.path }}"
+	        	{% if object.empresa_id == 1 %}
+	            window.open(url.replace("print","grafiexpress_report"),'_blank');
+	            {% else %}
+	            window.open(url.replace("print","gesa_report"),'_blank');
+	            {% endif %}
+	        });
+	    });
+    </script>
+{% endblock %}
+
+{% block content %}
+<div>
+	<form action="" method="post">{% csrf_token %}
+		<div align="center">
+
+			<h2>{{ mensaje }}</h2>
+			<br>
+
+			<button type="submit" class="btn btn-success">Aceptar</button>
+			<button type="button" onclick="window.history.back(); return false;" class="btn btn-danger">Cancelar</button>
+
+		</div>
+	</form>
+</div>
+{% endblock %}
+

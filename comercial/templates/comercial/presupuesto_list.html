@@ -1,0 +1,220 @@
+{% extends 'admin/base_site.html'%}
+{% load i18n admin_static %}
+{% load my_tags %}
+{% load humanize %}
+
+{% block extrastyle %}
+    <link rel="stylesheet" href="{% static 'chosen/chosen.css' %}">
+    <link rel="stylesheet" href="{% static 'chosen/docsupport/prism.css' %}">
+{% endblock %}
+
+{% block extrajs %}
+    <script src="{% static 'chosen/chosen.jquery.js' %}"></script>
+    <script src="{% static 'chosen/docsupport/prism.js' %}"></script>
+
+    <script type="text/javascript" src="{% static 'js/jquery.maskedinput.min.js' %}"></script>
+
+
+    <script type="text/javascript">
+        $(".chosen-select").chosen({
+            disable_search_threshold: 0,
+            no_results_text: "Sin resultados..",
+            width: "300px",
+            allow_single_deselect: true
+        });
+        $('.chosen-select').trigger('chosen:updated');
+
+        jQuery(function($) {
+            $(".date").mask("99/99/9999",{placeholder:"dd/mm/aaaa"});
+
+        });
+
+
+    </script>
+{% endblock %}
+
+{% block content %}
+    <form class="form" method="get">
+        <h1>Lista de Presupuestos</h1>
+        <center>
+            <dl>
+                <table class="table-filter table table-bordered table-stripped">
+                    <tbody>
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Trabajo:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="search-query" placeholder="Numero o Descripcion del trabajo.." name="q" value="{{ q }}">
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Cliente:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select class="chosen-select" data-placeholder="Seleccione un cliente.." name="cliente_id" value="{{ cliente_id }}" onchange="this.form.submit();">
+                                <option value=""></option>
+                                {% for cliente in clientes %}
+                                    <option {% if cliente.pk == cliente_id %} selected {% endif %} value="{{ cliente.id }}">{{ cliente }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Fecha desde:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_desde" value="{{ fecha_desde }}">
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Fecha hasta:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_hasta" value="{{ fecha_hasta }}">
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Estado:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select name="estado" value="{{ estado }}" onchange="this.form.submit();">
+                                <option {% if 'TODOS' in estado %} selected {% endif %} value="TODOS">TODOS</option>
+                                <option {% if 'PENDIENTE' in estado %} selected {% endif %} value="PENDIENTE">PENDIENTE</option>
+                                <option {% if 'PRESUPUESTADO' in estado %} selected {% endif %} value="PRESUPUESTADO">PRESUPUESTADO</option>
+                                <option {% if 'ENVIADO' in estado %} selected {% endif %} value="ENVIADO">ENVIADO</option>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <tr>
+
+                        <th style="border-top :3px solid white; border-right :3px solid white; border-bottom :3px solid white;">
+                            <a class="btn btn-info" href="/admin/comercial/presupuesto/" title="Limpiar Filtros">
+                                <i class="fa fa-undo"></i>
+                            </a>
+                            <input type="submit" value="Buscar" class="btn btn-success" hidden="hidden" style="display: none">
+                        </th>
+                    </tr>
+                    </tbody>
+                </table>
+            </dl>
+        </center>
+
+        <div id="next_button" align="right">
+                <button type="button" class="btn btn-primary" onclick="location.href='/admin/comercial/presupuesto/add/';" title="Agregar presupuesto">
+                    <span class="glyphicon glyphicon-plus"></span>
+                </button>
+        </div>
+    </form>
+
+
+    <div class="row">
+         <div class="col-sm-8">
+            <h2>Sin presupuesto  = {% if pendientes %} {{ pendientes|separador_miles }} {% else %} 0 {% endif %}</h2>
+        </div>
+        <div class="col-sm-3">
+            <h3>({{ conteo_presupuestos }})seleccionados</h3>
+        </div>
+	</div>
+
+    <div align="center">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Numero</th>
+                <th>Trabajo</th>
+                <th>Cliente</th>
+                <th>Fecha de Creacion</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for presupuesto in object_list %}
+                <tr {% if presupuesto.estado == 'env' %} class="bg-success" {% elif presupuesto.estado == 'pen' %} class="bg-danger"{% endif %}>
+                    <td>{{ presupuesto.id|separador_miles }}</td>
+                    <td>{{ presupuesto.trabajo }}</td>
+                    <td>{{ presupuesto.cliente }}</td>
+                    <td>{{ presupuesto.fecha_hora_creacion }}</td>
+                    <td>
+                        {% if presupuesto.estado == 'pen' %}
+                        Pendiente
+                        {% elif presupuesto.estado == 'pre' %}
+                        Presupuestado
+                        {% elif presupuesto.estado == 'env' %}
+                        Enviado
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if presupuesto.estado != 'env' %}
+                            <button type="button" class="btn btn-warning btn-xs" onclick="location.href='/admin/comercial/presupuesto/{{ presupuesto.id }}/';" title="Editar">
+                                <i class="fa fa-pencil"></i>
+                            </button>
+
+                            <button type="button" class="btn btn-success btn-xs" onclick="location.href='/admin/comercial/presupuesto/{{ presupuesto.id }}/enviar/';" title="Marcar como enviado">
+                                <i class="fa fa-send"></i>
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+        <table class="table">
+            <td>
+                <center>
+                    <ul class="pagination pagination-sm">
+                        {% if page_obj.has_previous %}
+                            <li class="previous">
+                                <a href="/admin/comercial/presupuesto/?page={{ page_obj.previous_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&estado={{ estado }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}">
+                                    <span aria-hidden="true">&larr;</span> Primera
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="/admin/comercial/presupuesto/?page={{ page_obj.previous_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&estado={{ estado }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}">
+                                    Anterior
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for page in page_obj.paginator.page_range|paginator_delimiter:page_obj.number %}
+                            <li>
+                                <a {% if page == page_obj.number %} class="active" style="background-color:#DD4814;color:white;" {% endif %} href="/admin/comercial/presupuesto/?page={{ page }}&q={{ q }}&cliente_id={{ cliente_id }}&estado={{ estado }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li>
+                                <a href="/admin/comercial/presupuesto/?page={{ page_obj.next_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&estado={{ estado }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}">
+                                    Siguiente
+                                </a>
+                            </li>
+
+                            <li class="next">
+                                <a href="/admin/comercial/presupuesto/?page={{ page_obj.paginator.num_pages}}&q={{ q }}&cliente_id={{ cliente_id }}&estado={{ estado }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}">
+                                    &Uacute;ltima <span aria-hidden="true">&rarr;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                    </ul>
+                </center>
+            </td>
+            <th>
+                Pag. {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}
+            </th>
+        </table>
+    {% endif %}
+{% endblock %}

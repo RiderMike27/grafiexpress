@@ -1,0 +1,234 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n l10n admin_static %}
+{% load my_tags %}
+{% load humanize %}
+
+
+{% block extrastyle %}
+    <link rel="stylesheet" href="{% static 'chosen/chosen.css' %}">
+    <link rel="stylesheet" href="{% static 'chosen/docsupport/prism.css' %}">
+{% endblock %}
+
+{% block extrajs %}
+    <link rel="stylesheet" type="text/css" href="/static/admin/css/base.css">
+    <link rel="stylesheet" type="text/css" href="/static/admin/css/forms.css">
+    <script type="text/javascript" src="/admin/jsi18n/"></script>
+    <link href="/static/autocomplete_light/vendor/select2/dist/css/select2.css" type="text/css" media="all" rel="stylesheet">
+    <link href="/static/autocomplete_light/select2.css" type="text/css" media="all" rel="stylesheet">
+    <script type="text/javascript" src="/static/admin/js/core.js"></script>
+    <script type="text/javascript" src="/static/admin/js/jquery.js"></script>
+    <script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
+    <script type="text/javascript" src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
+    <script type="text/javascript" src="/static/admin/js/actions.js"></script>
+    <script type="text/javascript" src="/static/autocomplete_light/jquery.init.js"></script>
+    <script type="text/javascript" src="/static/autocomplete_light/autocomplete.init.js"></script>
+    <script type="text/javascript" src="/static/autocomplete_light/vendor/select2/dist/js/select2.full.js"></script>
+    <script type="text/javascript" src="/static/autocomplete_light/select2.js"></script>
+    <script type="text/javascript" src="/static/admin/js/calendar.js"></script>
+    <script type="text/javascript" src="/static/admin/js/admin/DateTimeShortcuts.js"></script>
+    <script type="text/javascript" src="/static/admin/js/inlines.js"></script>
+    <script type="text/javascript" src="/static/admin/js/related-widget-wrapper.js"></script>
+
+    <script src="{% static 'chosen/chosen.jquery.js' %}"></script>
+    <script src="{% static 'chosen/docsupport/prism.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.maskedinput.min.js' %}"></script>
+    <script type="text/javascript">
+        $(".chosen-select").chosen({
+            disable_search_threshold: 0,
+            no_results_text: "Sin resultados..",
+            width: "300px",
+            allow_single_deselect: true
+        });
+        $('.chosen-select').trigger('chosen:updated');
+    </script>
+{% endblock %}
+
+{% block content %}
+    <h1>Estado de cuenta del cliente</h1>
+    <table class="table-filter table table-bordered table-stripped">
+        <tbody>
+        <tr>
+            <th style="vertical-align:middle">
+                <strong> Razon social:</strong>
+            </th>
+            <td style="vertical-align:middle">
+                {{ cliente }}
+            </td>
+
+            <th style="vertical-align:middle">
+                <strong> RUC/CI:</strong>
+            </th>
+            <td style="vertical-align:middle">
+                {{ cliente.ruc }}
+            </td>
+        </tr>
+
+        <tr>
+            <th style="vertical-align:middle">
+                <strong> Telefono:</strong>
+            </th>
+            <td style="vertical-align:middle">
+                {{ cliente.telefono }}
+            </td>
+            
+            <th style="vertical-align:middle">
+                <strong> Direccion:</strong>
+            </th>
+            <td style="vertical-align:middle">
+                {{ cliente.direccion }}
+            </td>
+        </tr>
+
+        <tr>
+            <th style="vertical-align:middle">
+                <strong> Total deuda:</strong>
+            </th>
+            <td colspan="3" style="vertical-align:middle">
+                {{ cliente.get_total_deuda | floatformat:0 | intcomma | default_if_none:"&nbsp;" }}
+            </td>
+
+        </tr>
+        </tbody>
+    </table>
+
+    <h3>Buscar factura</h3>
+    <form class="form" method="get">
+        <dl>
+            <table class="table-filter table table-bordered table-stripped " style="width: 80%;">
+                <tbody>
+                <tr>
+                    <th style="vertical-align:middle">
+                        <strong>Número de factura:</strong>
+                    </th>
+                    <th style="vertical-align:middle">
+                        <strong>Fecha de emisión:</strong>
+                    </th>
+                    <th style="vertical-align:middle">
+                        <strong>Fecha de vencimiento:</strong>
+                    </th>
+                </tr>
+                <tr>
+                    <td style="vertical-align:middle">
+                        <input type="text" id="filtro_numero_de_factura" class="search-query" placeholder="Número de factura" name="q_numero_de_factura" value="{{ q_numero_de_factura }}">
+                    </td>
+                    <td style="vertical-align:middle">
+                        <table>
+                            <tr>
+                                <td class="field-box field-fecha">
+                                    <label class="required inline" for="filtro_fecha_de_emision_desde">Desde:</label>
+                                    <input class="vDateField" id="filtro_fecha_de_emision_desde" name="q_fecha_de_emision_desde" size="10" type="text" value="{{ q_fecha_de_emision_desde }}">
+                                </td>
+                                <td class="field-box field-fecha">
+                                    <label class="required inline" for="filtro_fecha_de_emision_hasta">Hasta:</label>
+                                    <input class="vDateField" id="filtro_fecha_de_emision_hasta" name="q_fecha_de_emision_hasta" size="10" type="text" value="{{ q_fecha_de_emision_hasta }}">
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="vertical-align:middle">
+                        <table>
+                            <tr>
+                                <td class="field-box field-fecha">
+                                    <label class="required inline" for="filtro_fecha_de_vencimiento_desde">Desde:</label>
+                                    <input class="vDateField" id="filtro_fecha_de_vencimiento_desde" name="q_fecha_de_vencimiento_desde" size="10" type="text" value="{{ q_fecha_de_vencimiento_desde }}">
+                                </td>
+                                <td class="field-box field-fecha">
+                                    <label class="required inline" for="filtro_fecha_de_vencimiento_hasta">Hasta:</label>
+                                    <input class="vDateField" id="filtro_fecha_de_vencimiento_hasta" name="q_fecha_de_vencimiento_hasta" size="10" type="text" value="{{ q_fecha_de_vencimiento_hasta }}">
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="vertical-align:middle">
+                        <a class="btn btn-info" href="/admin/cobros/estadodecuenta/{{ cliente.id }}/detail/" title="Limpiar Filtros">
+                            <i class="fa fa-undo"></i>
+                        </a>
+                        <input type="submit" value="Buscar" class="btn btn-success">
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </dl>
+
+        <div id="next_button" align="right">
+            <button onclick="this.form.submit();" class="btn btn-success" name="excel" value="excel" type="submit" title="Exportar a Excel">
+                <i class="fa fa-file-excel-o"></i>
+            </button>
+        </div>
+
+    </form>
+
+
+    <br/>
+    <div align="center">
+        <table id="result_list" class="table table-striped table-filter">
+            <thead>
+            <tr>
+                <th>Factura</th>
+                <th>Fecha de emisión</th>
+                <th>Fecha de vencimiento</th>
+                <th>Total</th>
+                <th>Pagado</th>
+                <th>Saldo</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for venta in object_list %}
+                <tr>
+                    <td>{{ venta.get_numero_de_factura }}</td>
+                    <td>{{ venta.fecha_de_emision }}</td>
+                    <td>{{ venta.fecha_de_vencimiento }}</td>
+                    <td style="text-align: right; white-space: nowrap; width: 8%;">{{ venta.total | floatformat:0 | intcomma | default_if_none:"&nbsp;" }}</td>
+                    <td style="text-align: right; white-space: nowrap; width: 8%;">{{ venta.pagado | floatformat:0 | intcomma | default_if_none:"&nbsp;" }}</td>
+                    <td style="text-align: right; white-space: nowrap; width: 8%;">{{ venta.saldo | floatformat:0 | intcomma |default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+        <table class="table" style="text-align: center;">
+            <tr><td>
+                <ul class="pagination pagination-sm">
+                    {% if page_obj.has_previous %}
+                        <li class="previous">
+                            <a href="/admin/cobros/estadodecuenta/{{ cliente.id }}/detail/?page={{ page_obj.previous_page_number }}&q_numero_de_factura={{ q_numero_de_factura }}&q_fecha_de_emision_desde={{ q_fecha_de_emision }}&q_fecha_de_emision_hasta={{ q_fecha_de_emision }}&q_fecha_de_vencimiento_desde={{ q_fecha_de_vencimiento }}&q_fecha_de_vencimiento_hasta={{ q_fecha_de_vencimiento }}">
+                                <span aria-hidden="true">&larr;</span> Primera
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="/admin/cobros/estadodecuenta/{{ cliente.id }}/detail/?page={{ page_obj.previous_page_number }}&q_numero_de_factura={{ q_numero_de_factura }}&q_fecha_de_emision_desde={{ q_fecha_de_emision }}&q_fecha_de_emision_hasta={{ q_fecha_de_emision }}&q_fecha_de_vencimiento_desde={{ q_fecha_de_vencimiento }}&q_fecha_de_vencimiento_hasta={{ q_fecha_de_vencimiento }}">
+                                Anterior
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for page in page_obj.paginator.page_range|paginator_delimiter:page_obj.number %}
+                        <li>
+                            <a {% if page == page_obj.number %} class="active" style="background-color:#DD4814;color:white;" {% endif %} href="/admin/cobros/estadodecuenta/{{ cliente.id }}/detail/?page={{ page }}&q_numero_de_factura={{ q_numero_de_factura }}&q_fecha_de_emision_desde={{ q_fecha_de_emision }}&q_fecha_de_emision_hasta={{ q_fecha_de_emision }}&q_fecha_de_vencimiento_desde={{ q_fecha_de_vencimiento }}&q_fecha_de_vencimiento_hasta={{ q_fecha_de_vencimiento }}">
+                                {{ page }}
+                            </a>
+                        </li>
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li>
+                            <a href="/admin/cobros/estadodecuenta/{{ cliente.id }}/detail/?page={{ page_obj.next_page_number }}&q_numero_de_factura={{ q_numero_de_factura }}&q_fecha_de_emision_desde={{ q_fecha_de_emision }}&q_fecha_de_emision_hasta={{ q_fecha_de_emision }}&q_fecha_de_vencimiento_desde={{ q_fecha_de_vencimiento }}&q_fecha_de_vencimiento_hasta={{ q_fecha_de_vencimiento }}">
+                                Siguiente
+                            </a>
+                        </li>
+
+                        <li class="next">
+                            <a href="/admin/cobros/estadodecuenta/{{ cliente.id }}/detail/?page={{ page_obj.paginator.num_pages}}&q_numero_de_factura={{ q_numero_de_factura }}&q_fecha_de_emision_desde={{ q_fecha_de_emision }}&q_fecha_de_emision_hasta={{ q_fecha_de_emision }}&q_fecha_de_vencimiento_desde={{ q_fecha_de_vencimiento }}&q_fecha_de_vencimiento_hasta={{ q_fecha_de_vencimiento }}">
+                                &Uacute;ltima <span aria-hidden="true">&rarr;</span>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </td></tr>
+        </table>
+    {% endif %}
+{% endblock %}

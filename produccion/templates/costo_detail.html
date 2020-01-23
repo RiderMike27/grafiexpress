@@ -1,0 +1,328 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block content %}
+    <h1>Datos del costeo</h1>
+    <table class="table table-striped table-filter" summary="Datos del costeo">
+        <tbody>
+            <tr>
+                <th scope="row"> Orden de Trabajo </th>
+                <td> {{ object.detalle_orden_de_trabajo.orden_de_trabajo }} </td>
+            </tr>
+
+
+            <tr>
+                <th scope="row"> Cliente </th>
+                <td> {{ object.detalle_orden_de_trabajo.orden_de_trabajo.cliente }}</td>
+            </tr>
+
+            <tr>
+                <th scope="row"> Vendedor </th>
+                <td> {{ object.detalle_orden_de_trabajo.orden_de_trabajo.vendedor }} </td>
+            </tr>
+
+            <tr>
+                <th scope="row"> Cantidad </th>
+                <td> {{ object.detalle_orden_de_trabajo.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+            </tr>
+
+            <tr>
+                <th scope="row"> Presupuesto </th>
+                <td> {{ object.detalle_orden_de_trabajo.orden_de_trabajo.presupuesto_numero }}</td>
+            </tr>
+
+            <tr>
+                <th scope="row"> Fecha </th>
+                <td> {{ object.detalle_orden_de_trabajo.orden_de_trabajo.fecha_de_ingreso }}</td>
+            </tr>
+
+
+            <tr>
+                <th scope="row"> Total </th>
+                <td> {{ object.get_total_general.to_integral|intcomma|default_if_none:"&nbsp;" }}</td>
+            </tr>
+        </tbody>
+
+    </table>
+    {% if papeles %}
+        <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+            <caption><h1>PAPELES</h1></caption>
+
+            <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Gramaje</th>
+                <th>Resma</th>
+                <th>Color</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>SubTotal</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for papel in papeles%}
+                <tr>
+                    <td>{{ papel.tipo }}</td>
+                    <td>{{ papel.gramaje }}</td>
+                    <td>{{ papel.resma }}</td>
+                    <td>{% if not 'None' %}{{ papel.color }}{% endif %}</td>
+                    <td>{{ papel.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ papel.precio_unitario.to_integral|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ papel.get_subtotal.to_integral|intcomma|default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    {% if preprensas %}
+        <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+            <caption><h1>PRE-PRENSAS</h1></caption>
+
+            <thead>
+            <tr>
+                <th>Maquina</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for preprensa in preprensas%}
+                <tr>
+                    <td>{{ preprensa.maquina }}</td>
+                    <td>{{ preprensa.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ preprensa.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ preprensa.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    {% if troqueles %}
+        <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+            <caption><h1>TROQUELES</h1></caption>
+
+            <thead>
+            <tr>
+                <th>Existente</th>
+                <th>Precio</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for troquel in troqueles%}
+                <tr>
+                    <td>{% if troquel.existente %}Si{% else %}No{% endif %}</td>
+                    <td>{{ troquel.precio|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    {% if posprensaservicios %}
+        <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+            <caption><h1>SERVICIOS</h1></caption>
+
+            <thead>
+            <tr>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for servicio in posprensaservicios %}
+                <tr>
+                    <td>{{ servicio.descripcion }}</td>
+                    <td>{{ servicio.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ servicio.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ servicio.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    {% if posprensamateriales %}
+        <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+            <caption><h1>MATERIALES</h1></caption>
+
+            <thead>
+            <tr>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for materiales in posprensamateriales%}
+                <tr>
+                    <td>{{ materiales.descripcion }}</td>
+                    <td>{{ materiales.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ materiales.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ materiales.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    {% if posprensaotroservicios %}
+        <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+            <caption><h1>OTROS SERVICIOS</h1></caption>
+
+            <thead>
+            <tr>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for servicios in posprensaotroservicios%}
+                <tr>
+                    <td>{{ servicios.descripcion }}</td>
+                    <td>{{ servicios.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ servicios.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ servicios.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    {% if datosdebolsas %}
+        <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+            <caption><h1>DATOS DE BOLSA</h1></caption>
+
+            <thead>
+            <tr>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for dbolsa in datosdebolsas%}
+                <tr>
+                    <td>{{ dbolsa.descripcion }}</td>
+                    <td>{{ dbolsa.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ dbolsa.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ dbolsa.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    {% if revistas %}
+        <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+            <caption><h1>REVISTAS</h1></caption>
+
+            <thead>
+            <tr>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for revista in revistas%}
+                <tr>
+                    <td>{{ revista.descripcion }}</td>
+                    <td>{{ revista.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ revista.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ revista.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    {% if compuestos %}
+        <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+            <caption><h1>COMPUESTOS</h1></caption>
+
+            <thead>
+            <tr>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for compuesto in compuestos %}
+                <tr>
+                    <td>{{ compuesto.descripcion }}</td>
+                    <td>{{ compuesto.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ compuesto.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ compuesto.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    {% if plastificados %}
+        <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+            <caption><h1>PLASTIFICADOS</h1></caption>
+
+            <thead>
+            <tr>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for plastificado in plastificados%}
+                <tr>
+                    <td>{{ plastificado.descripcion }}</td>
+                    <td>{{ plastificado.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ plastificado.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ plastificado.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    {% if otrosgastos %}
+        <table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+            <caption><h1>OTROS GASTOS</h1></caption>
+
+            <thead>
+            <tr>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for otrogasto in otrosgastos%}
+                <tr>
+                    <td>{{ otrogasto.descripcion }}</td>
+                    <td>{{ otrogasto.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ otrogasto.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                    <td>{{ otrogasto.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <button type="button" class="btn btn-primary" onclick="window.history.back(); return false;">Volver</button>
+
+{% endblock %}

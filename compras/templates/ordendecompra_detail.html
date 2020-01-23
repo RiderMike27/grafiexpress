@@ -1,0 +1,420 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block content %}
+<h1>Datos de la Orden de Compra</h1>
+<table class="table table-striped table-filter" summary="Datos del Compra.">
+	<tbody>
+		<tr>
+			<th scope="row"> Numero </th>
+			<td> {{ object.id }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Fecha </th>
+			<td> {{ object.fecha }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Proveedor </th>
+			<td> {{ object.proveedor }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Contacto </th>
+			<td> {{ object.contacto }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Telefono </th>
+			<td> {{ object.telefono }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Forma de pago </th>
+			<td> {{ object.forma_de_pago }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Condicion </th>
+			<td> {{ object.get_condicion_display }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Cheque diferido </th>
+			<td> {{ object.cheque_diferido }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Plazo </th>
+			<td> {{ object.plazo }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Departamento solicitante </th>
+			<td> {{ object.departamento_solicitante }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Categoria de gastos </th>
+			<td> {{ object.categoria_de_gastos }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Responsable </th>
+			<td> {{ object.responsable }} </td>
+		</tr>
+
+
+		<tr>
+			<th scope="row"> Total </th>
+			<td> {{ object.get_total.to_integral | floatformat:"2" | intcomma }} </td>
+		</tr>
+
+
+	</tbody>
+</table>
+
+{% if detalles0 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Papel</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles0 %}
+		<tr>
+			<td>{{ detalle.descripcion.costo.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+
+{% if detalles1 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Pre-prensa</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles1 %}
+		<tr>
+			<td>{{ detalle.descripcion.costo.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+{% if detalles2 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Troquel</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles2 %}
+		<tr>
+			<td>{{ detalle.descripcion.costo.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+{% if detalles3 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Pos-prensa Servicio</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles3 %}
+		<tr>
+			<td>{{ detalle.descripcion.costo.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+{% if detalles4 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Pos-prensa Material</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles4 %}
+		<tr>
+			<td>{{ detalle.descripcion.costo.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+{% if detalles5 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Pos-prensa otro servicio</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles5 %}
+		<tr>
+			<td>{{ detalle.descripcion.costo.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+{% if detalles6 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Datos de bolsa</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles6 %}
+		<tr>
+			<td>{{ detalle.descripcion.costo.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+{% if detalles7 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Revista</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles7 %}
+		<tr>
+			<td>{{ detalle.descripcion.costo.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+{% if detalles8 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Compuesto</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles8 %}
+		<tr>
+			<td>{{ detalle.descripcion.costo.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+{% if detalles9 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Plastificado</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles9 %}
+		<tr>
+			<td>{{ detalle.descripcion.costo.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+
+
+{% if detalles10 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Otro Gasto</h1></caption>
+
+	<thead>
+		<tr>
+			<th>OT</th>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles10 %}
+		<tr>
+			<td>{{ detalle.descripcion.costo.detalle_orden_de_trabajo.orden_de_trabajo.id }}</td>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+
+{% if detalles11 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>Insumo</h1></caption>
+
+	<thead>
+		<tr>
+			<th>Descripcion</th>			
+			<th>Cantidad</th>
+			<th>Precio</th>
+			<th>Subtotal</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles11 %}
+		<tr>
+			<td>{{ detalle.descripcion }}</td>
+			<td>{{ detalle.cantidad|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.precio_unitario|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.get_subtotal|floatformat:"2"|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+
+
+<button type="button" class="btn btn-primary" onclick="window.history.back(); return false;">Volver</button>
+
+{% endblock %}

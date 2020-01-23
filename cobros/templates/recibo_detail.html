@@ -1,0 +1,114 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block content %}
+<h1>Datos del Recibo</h1>
+<table class="table table-striped table-filter" summary="Datos del Recibo.">
+	<tbody>
+		<tr>
+			<th scope="row"> Numero </th>
+			<td> {{ object.numero }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Cliente </th>
+			<td> {{ object.cliente}} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Fecha </th>
+			<td> {{ object.fecha }} </td>
+		</tr>
+
+        <tr>
+			<th scope="row"> Hora </th>
+			<td> {{ object.hora }} </td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Estado </th>
+			<td> {{ object.get_estado_display }} </td>
+		</tr>
+
+        <tr>
+			<th scope="row"> Presentado </th>
+			<td> {%  if object.presentado %} Si {% else %} No {% endif %}</td>
+		</tr>
+
+		<tr>
+			<th scope="row"> Monto </th>
+			<td> {{ object.monto|intcomma|default_if_none:"&nbsp;" }} </td>
+		</tr>
+
+	</tbody>
+</table>
+
+
+{% if detalles %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>FACTURAS</h1></caption>
+
+	<thead>
+		<tr>
+			<th>Factura</th>
+			<th>Total</th>
+			<th>Pagado</th>
+			<th>Saldo</th>
+			<th>Monto</th>
+
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles %}
+		<tr>
+			<td>{{ detalle.factura }}</td>
+			<td>{{ detalle.factura.total|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.factura.pagado|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.factura.saldo|intcomma|default_if_none:"&nbsp;" }}</td>
+			<td>{{ detalle.monto|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+
+
+{% if detalles2 %}
+<table id="result_list" class="table table-striped table-bordered table-hover table-condensed">
+	<caption><h1>COBROS</h1></caption>
+
+	<thead>
+		<tr>
+			<th>Medio de pago</th>
+			<!--
+			<th>Numero de comprobante</th>
+			-->
+			<th>Cheque</th>
+			<th>Monto</th>
+
+		</tr>
+	</thead>
+
+	<tbody>
+		{% for detalle in detalles2 %}
+		<tr>
+			<td>{{ detalle.get_medio_de_pago_display }}</td>
+			<!--
+			<td>{{ detalle.numero_de_comprobante }}</td>
+			-->
+			<td>{{ detalle.cheque }}</td>
+
+			<td>{{ detalle.monto|intcomma|default_if_none:"&nbsp;" }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+
+
+<button type="button" class="btn btn-primary" onclick="window.history.back(); return false;">Volver</button>
+
+{% endblock %}

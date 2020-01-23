@@ -1,0 +1,268 @@
+{% extends 'admin/base_site.html'%}
+{% load i18n admin_static %}
+{% load my_tags %}
+{% load humanize %}
+
+{% block extrastyle %}
+    <link rel="stylesheet" href="{% static 'chosen/chosen.css' %}">
+    <link rel="stylesheet" href="{% static 'chosen/docsupport/prism.css' %}">
+{% endblock %}
+
+{% block extrajs %}
+    <script src="{% static 'chosen/chosen.jquery.js' %}"></script>
+    <script src="{% static 'chosen/docsupport/prism.js' %}"></script>
+
+    <script type="text/javascript">
+        $(".chosen-select").chosen({
+            disable_search_threshold: 0,
+            no_results_text: "Sin resultados..",
+            width: "300px",
+            allow_single_deselect: true
+        });
+        $('.chosen-select').trigger('chosen:updated');
+    </script>
+{% endblock %}
+
+{% block content %}
+    <form class="form" method="get">
+        <h1>Lista de recibos</h1>
+        <center>
+            <dl>
+                <table class="table-filter table table-bordered table-stripped">
+                    <tbody>
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Numero:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input id="id_numero_de_recibo" type="text" class="search-query" placeholder="Numero de recibo.." name="q" value="{{ q }}">
+                        </td>
+
+
+                        <th style="vertical-align:middle">
+                            <strong> Cliente:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select class="chosen-select" data-placeholder="Seleccione un cliente.." name="cliente_id" value="{{ cliente_id }}" onchange="this.form.submit();">
+                                <option value=""></option>
+                                {% for cliente in clientes %}
+                                    <option {% if cliente.pk == cliente_id %} selected {% endif %} value="{{ cliente.id }}">{{ cliente }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+
+                        <th style="vertical-align:middle">
+                            <strong> Fecha desde:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_desde" value="{{ fecha_desde }}">
+                        </td>
+
+
+                        <th style="vertical-align:middle">
+                            <strong> Fecha hasta:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input type="text" class="date" placeholder="dd/mm/aaaa" name="fecha_hasta" value="{{ fecha_hasta }}">
+                        </td>
+                    </tr>
+                    <tr>
+
+                        <th style="vertical-align:middle">
+                            <strong> Estado:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select name="estado" value="{{ estado }}" onchange="this.form.submit();">
+                                <option {% if '0' in estado %} selected {% endif %} value="0">SIN IMPRIMIR</option>
+                                <option {% if '1' in estado %} selected {% endif %} value="1">IMPRESOS</option>
+                                <option {% if '2' in estado %} selected {% endif %} value="2">ANULADOS</option>
+                                <option {% if 'TODOS' in estado %} selected {% endif %} value="TODOS">TODOS</option>
+                            </select>
+                        </td>
+
+                        <th style="vertical-align:middle">
+                            <strong> Factura:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <input id="id_factura_id" type="text" class="search-query" placeholder="Numero de factura.." name="factura_id" value="{{ factura_id }}">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="vertical-align:middle">
+                            <strong> Presentado:</strong>
+                        </th>
+                        <td style="vertical-align:middle">
+                            <select name="presentado" value="{{ presentado }}" onchange="this.form.submit();">
+                                <option {% if 'TODOS' in presentado %} selected {% endif %} value="TODOS">TODOS</option>
+                                <option {% if 'SI' in presentado %} selected {% endif %} value="SI">SI</option>
+                                <option {% if 'NO' in presentado %} selected {% endif %} value="NO">NO</option>
+                            </select>
+                        </td>
+
+
+                        <th style="border-top :3px solid white; border-right :3px solid white; border-bottom :3px solid white;">
+                            <a class="btn btn-info" href="/admin/cobros/recibo/" title="Limpiar Filtros">
+                                <i class="fa fa-undo"></i>
+                            </a>
+                             <input type="submit" value="Buscar" class="btn btn-success" hidden="hidden" style="display: none">
+                        </th>
+                    </tr>
+                    </tbody>
+                </table>
+            </dl>
+        </center>
+
+        <div id="next_button" align="right">
+            {% if perms.cobros.add_recibo %}
+                <button type="button" class="btn btn-primary" onclick="location.href='/admin/cobros/recibo/add/';" title="Agregar recibo actual">
+                    <span class="glyphicon glyphicon-plus"></span>
+                </button>
+            {% endif %}
+            <button onclick="this.form.submit();" class="btn btn-success" name="excel" value="excel" type="submit" title="Exportar a Excel">
+                <i class="fa fa-file-excel-o"></i>
+            </button>
+        </div>
+    </form>
+
+
+    <br></br>
+
+    <div align="center">
+        <table id="result_list" class="table table-striped table-filter">
+            <thead>
+            <tr>
+                <th>Numero</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Monto</th>
+                <th>Rendido</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for recibo in object_list %}
+                <tr>
+                    <td>{{ recibo.numero | intcomma }}</td>
+                    <td>{{ recibo.cliente }}</td>
+                    <td>{{ recibo.fecha }}</td>
+                    <td style="text-align: right">{{ recibo.monto.to_integral | intcomma}}</td>
+                    <td>{% if recibo.presentado %}Si{% else %}No{% endif %}</td>
+                    <td>
+
+                        <!-- si tiene permiso de edicion y estado es PENDIENTE puede cambiar -->
+                        {% if perms.cobros.change_recibo and recibo.estado == 0 %}
+                            <button type="button" class="btn btn-warning btn-xs" onclick="location.href='/admin/cobros/recibo/{{ recibo.id }}/';" title="Editar">
+                                <i class="fa fa-pencil"></i>
+                            </button>
+                        {% endif %}
+
+                        <!-- si tiene permiso de imprimir y estado es PENDIENTE puede imprimir la factura -->
+                        {% if perms.cobros.print_recibo and recibo.estado == 0 %}
+                            <button type="button" class="btn btn-success btn-xs" onclick="location.href='/admin/cobros/recibo/{{ recibo.id }}/print/';" title="imprimir">
+                                <i class="fa fa-print"></i>
+                            </button>
+                        {% endif %}
+
+                        <!-- si tiene permiso de imprimir y estado es CONFIRMADO puede imprimir la factura -->
+                        {% if perms.cobros.print_recibo and recibo.estado == 1 %}
+                            <button type="button" class="btn btn-success btn-xs" onclick="location.href='/admin/cobros/recibo/{{ recibo.id }}/print/';" title="volver a imprimir">
+                                <i class="fa fa-print"></i>
+                            </button>
+                        {% endif %}
+
+                        <!-- si tiene permiso de anular y estado es CONFIRMADO puede anular la factura -->
+                        {% if perms.cobros.cancel_recibo and recibo.estado == 1 %}
+                            <button type="button" class="btn btn-warning btn-xs" onclick="location.href='/admin/cobros/recibo/{{ recibo.id }}/cancel/';" title="anular">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        {% endif %}
+
+                        <!-- si tiene permiso de anular y estado es ANULADO puede cancelar anular la factura -->
+                        {% if perms.cobros.cancel_recibo and recibo.estado == 2 %}
+                            <button type="button" class="btn btn-default btn-xs" onclick="location.href='/admin/cobros/recibo/{{ recibo.id }}/revert/';" title="cancelar anulacion">
+                                <i class="fa fa-check"></i>
+                            </button>
+                        {% endif %}
+
+                        <button type="button" class="btn btn-info btn-xs" onclick="location.href='/admin/cobros/recibo/{{ recibo.id }}/detail/';" title="Detalle">
+                            <i class="fa fa-list-ol"></i>
+                        </button>
+
+
+                        <!--
+						{% if perms.cobros.change_recibo %}
+						<button type="button" class="btn btn-warning btn-xs" onclick="location.href='/admin/cobros/recibo/{{ recibo.id }}/';" title="Editar">
+							<i class="fa fa-pencil"></i>
+						</button>
+						{% endif %}
+
+						{% if perms.cobros.delete_recibo %}
+						<button type="button" class="btn btn-danger btn-xs" onclick="location.href='/admin/cobros/recibo/{{ recibo.id }}/delete/';" title="Borrar">
+							<i class="fa fa-minus"></i>
+						</button>
+						{% endif %}
+
+						<button type="button" class="btn btn-info btn-xs" onclick="location.href='/admin/cobros/recibo/{{ recibo.id }}/detail/';" title="Detalle">
+							<i class="fa fa-list-ol"></i>
+						</button>
+						-->
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+        <table class="table">
+            <td>
+                <center>
+                    <ul class="pagination pagination-sm">
+                        {% if page_obj.has_previous %}
+                            <li class="previous">
+                                <a href="/admin/cobros/recibo/?page={{ page_obj.previous_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}&orden_de_trabajo={{ orden_de_trabajo }}&estado={{ estado }}">
+                                    <span aria-hidden="true">&larr;</span> Primera
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="/admin/cobros/recibo/?page={{ page_obj.previous_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}&orden_de_trabajo={{ orden_de_trabajo }}&estado={{ estado }}">
+                                    Anterior
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for page in page_obj.paginator.page_range|paginator_delimiter:page_obj.number %}
+                            <li>
+                                <a {% if page == page_obj.number %} class="active" style="background-color:#DD4814;color:white;" {% endif %} href="/admin/cobros/recibo/?page={{ page }}&q={{ q }}&cliente_id={{ cliente_id }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}&orden_de_trabajo={{ orden_de_trabajo }}&estado={{ estado }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li>
+                                <a href="/admin/cobros/recibo/?page={{ page_obj.next_page_number }}&q={{ q }}&cliente_id={{ cliente_id }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}&orden_de_trabajo={{ orden_de_trabajo }}&estado={{ estado }}">
+                                    Siguiente
+                                </a>
+                            </li>
+
+                            <li class="next">
+                                <a href="/admin/cobros/recibo/?page={{ page_obj.paginator.num_pages}}&q={{ q }}&cliente_id={{ cliente_id }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}&orden_de_trabajo={{ orden_de_trabajo }}&estado={{ estado }}">
+                                    &Uacute;ltima <span aria-hidden="true">&rarr;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                    </ul>
+                </center>
+            </td>
+            <th>
+                Pag. {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}
+            </th>
+        </table>
+    {% endif %}
+{% endblock %}

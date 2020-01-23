@@ -1,0 +1,679 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+{{ media }}
+{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+    <link rel="stylesheet" href="{% static 'chosen/chosen.css' %}">
+    <link rel="stylesheet" href="{% static 'chosen/docsupport/prism.css' %}">
+{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form{% endblock %}
+
+{% block extrajs %}
+    <script type="text/javascript" src="{% static 'js/autoNumeric.js' %}"></script>
+
+    <script type="text/javascript">
+        jQuery(function($) {
+            $('.auto').autoNumeric('init');
+        });
+    </script>
+{% endblock %}
+
+{% if not is_popup %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; {% if has_change_permission %}<a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %}
+&rsaquo; {% if add %}{% trans 'Add' %} {{ opts.verbose_name }}{% else %}{{ original|truncatewords:"18" }}{% endif %}
+</div>
+{% endblock %}
+{% endif %}
+
+{% block content %}<div id="content-main">
+{% block object-tools %}
+{% if change %}{% if not is_popup %}
+  <ul class="object-tools">
+    {% block object-tools-items %}
+    <li>
+        {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+        <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
+    </li>
+    {% if has_absolute_url %}<li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>{% endif %}
+    {% endblock %}
+  </ul>
+{% endif %}{% endif %}
+{% endblock %}
+<form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}{% block form_top %}{% endblock %}
+<div>
+{% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1" />{% endif %}
+{% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}" />{% endif %}
+{% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+{% if errors %}
+    <p class="errornote">
+    {% if errors|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+    </p>
+    {{ adminform.form.non_field_errors }}
+{% endif %}
+
+{% block field_sets %}
+{% for fieldset in adminform %}
+  {% include "admin/includes/fieldset.html" %}
+{% endfor %}
+{% endblock %}
+
+{% block after_field_sets %}{% endblock %}
+
+{% block inline_field_sets %}
+<div class="container">
+  <h2>DETALLE</h2>
+  <ul class="nav nav-pills">
+    <li class="active"><a data-toggle="pill" href="#papelordendecompra_set-group">Papeles</a></li>
+    <li><a data-toggle="pill" href="#preprensaordendecompra_set-group">Pre-prensa</a></li>
+    <li><a data-toggle="pill" href="#troquelordendecompra_set-group">Troqueles</a></li>
+    <li><a data-toggle="pill" href="#posprensaservicioordendecompra_set-group">Servicios</a></li>
+    <li><a data-toggle="pill" href="#posprensamaterialordendecompra_set-group">Materiales</a></li>
+    <li><a data-toggle="pill" href="#posprensaotroservicioordendecompra_set-group">Otros servicios</a></li>
+    <li><a data-toggle="pill" href="#datosdebolsaordendecompra_set-group">Datos de bolsa</a></li>
+    <li><a data-toggle="pill" href="#revistaordendecompra_set-group">Revistas</a></li>
+    <li><a data-toggle="pill" href="#compuestoordendecompra_set-group">Compuestos</a></li>
+    <li><a data-toggle="pill" href="#plastificadoordendecompra_set-group">Plastificados</a></li>
+    <li><a data-toggle="pill" href="#otrogastoordendecompra_set-group">Otros Gastos</a></li>
+
+  </ul>
+  <div class="tab-content">
+
+{% for inline_admin_formset in inline_admin_formsets %}
+    {% if forloop.counter < 12 %}
+    {% include inline_admin_formset.opts.template %}
+    {% endif %}
+{% endfor %}
+  
+  </div>
+
+<div align="center">
+{% for inline_admin_formset in inline_admin_formsets %}
+    {% if forloop.counter == 12 %}
+    {% include inline_admin_formset.opts.template %}
+    {% endif %}
+{% endfor %}
+</div>
+
+</div>
+
+
+{% endblock %}
+
+{% block after_related_objects %}{% endblock %}
+
+{% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+
+{% block admin_change_form_document_ready %}
+    <script type="text/javascript" src="{% static 'js/decimales.js' %}"></script>
+
+
+    <script type="text/javascript">
+        (function($) {
+            $(document).ready(function() {
+                $('.add-another').click(function(e) {
+                    e.preventDefault();
+                    showAddAnotherPopup(this);
+                });
+
+
+                // quitar coma decimal y separadores de miles antes del submit
+                $('form input[type=submit]').click(function(e) {
+                    $('.auto').each(function (){
+                        $(this).val(($(this).val()!='')?unformat(document.getElementById(this.id.toString())):'');
+                    });
+                });
+
+                // recalcular totales al marcar o desmarcar algo como borrado
+                $('form input[type=checkbox]').click(function(e) {
+                        calcular_total();
+                });
+
+                // recalcular totales al borrar un item de un detalle no guardador (con botoncito 'x' )
+                $('.inline-deletelink').click(function() {
+                    calcular_total();
+                });
+
+                // recargar el plugin de autonumeric al crear una nueva fila
+                $('.add-row').click(function() {
+                    jQuery(function($) {
+                        $('.auto').autoNumeric('init');
+                    });
+                });
+
+                // traer datos por AJAX
+                $('select').change(function(){
+                    vector = $(this).attr("id").split("-")
+
+                    if(vector[0] == "id_proveedor"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_telefono").val("");
+                            $("#id_contacto").val("");
+                            //$("#id_condicion").val("");
+                            return
+                        }
+                        $.ajax({
+                            data : {'proveedorid' : valueSelected },
+                            url : "/admin/proveedores/getproveedor",
+                            type : "get",
+                            success : function(data){
+                                $("#id_telefono").val(data[0].telefono);
+                                $("#id_contacto").val(data[0].contacto);
+                                $("#id_condicion").val(data[0].condicion);
+                            }
+                        });
+                    }
+
+                    if(vector[0] == "id_papelordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_papelordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_papelordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            $("#id_papelordendecompra_set-" + vector[1] + "-subtotal").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'id' : valueSelected },
+                            url : "/admin/produccion/getpapelcosto",
+                            type : "get",
+                            success : function(data){
+                                //console.log(data[0].precio);
+                                $("#id_papelordendecompra_set-" + vector[1] + "-cantidad").val(data[0].cantidad);
+                                $("#id_papelordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                $("#id_papelordendecompra_set-" + vector[1] + "-subtotal").val(data[0].subtotal);
+                                calcular_total();
+                            }
+                        });
+                    }
+
+                    if(vector[0] == "id_preprensaordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_preprensaordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_preprensaordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            $("#id_preprensaordendecompra_set-" + vector[1] + "-subtotal").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'id' : valueSelected },
+                            url : "/admin/produccion/getpreprensacosto",
+                            type : "get",
+                            success : function(data){
+                                //console.log(data[0].precio);
+                                $("#id_preprensaordendecompra_set-" + vector[1] + "-cantidad").val(data[0].cantidad);
+                                $("#id_preprensaordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                $("#id_preprensaordendecompra_set-" + vector[1] + "-subtotal").val(data[0].subtotal);
+                                calcular_total();
+                            }
+                        });
+                    }
+
+                    if(vector[0] == "id_troquelordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_troquelordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_troquelordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            $("#id_troquelordendecompra_set-" + vector[1] + "-subtotal").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'id' : valueSelected },
+                            url : "/admin/produccion/gettroquelcosto",
+                            type : "get",
+                            success : function(data){
+                                //console.log(data[0].precio);
+                                $("#id_troquelordendecompra_set-" + vector[1] + "-cantidad").val(data[0].cantidad);
+                                $("#id_troquelordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                $("#id_troquelordendecompra_set-" + vector[1] + "-subtotal").val(data[0].subtotal);
+                                calcular_total();
+                            }
+                        });
+                    }
+
+                    if(vector[0] == "id_posprensaservicioordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_posprensaservicioordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_posprensaservicioordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            $("#id_posprensaservicioordendecompra_set-" + vector[1] + "-subtotal").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'id' : valueSelected },
+                            url : "/admin/produccion/getposprensaserviciocosto",
+                            type : "get",
+                            success : function(data){
+                                //console.log(data[0].precio);
+                                $("#id_posprensaservicioordendecompra_set-" + vector[1] + "-cantidad").val(data[0].cantidad);
+                                $("#id_posprensaservicioordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                $("#id_posprensaservicioordendecompra_set-" + vector[1] + "-subtotal").val(data[0].subtotal);
+                                calcular_total();
+                            }
+                        });
+                    }
+
+                    if(vector[0] == "id_posprensamaterialordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_posprensamaterialordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_posprensamaterialordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            $("#id_posprensamaterialordendecompra_set-" + vector[1] + "-subtotal").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'id' : valueSelected },
+                            url : "/admin/produccion/getposprensamaterialcosto",
+                            type : "get",
+                            success : function(data){
+                                //console.log(data[0].precio);
+                                $("#id_posprensamaterialordendecompra_set-" + vector[1] + "-cantidad").val(data[0].cantidad);
+                                $("#id_posprensamaterialordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                $("#id_posprensamaterialordendecompra_set-" + vector[1] + "-subtotal").val(data[0].subtotal);
+                                calcular_total();
+                            }
+                        });
+                    }
+
+                    if(vector[0] == "id_posprensaotroservicioordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_posprensaotroservicioordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_posprensaotroservicioordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            $("#id_posprensaotroservicioordendecompra_set-" + vector[1] + "-subtotal").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'id' : valueSelected },
+                            url : "/admin/produccion/getposprensaotroserviciocosto",
+                            type : "get",
+                            success : function(data){
+                                //console.log(data[0].precio);
+                                $("#id_posprensaotroservicioordendecompra_set-" + vector[1] + "-cantidad").val(data[0].cantidad);
+                                $("#id_posprensaotroservicioordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                $("#id_posprensaotroservicioordendecompra_set-" + vector[1] + "-subtotal").val(data[0].subtotal);
+                                calcular_total();
+                            }
+                        });
+                    } 
+                    if(vector[0] == "id_insumoordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_insumoordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_insumoordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'materialid' : valueSelected },
+                            url : "/admin/materiales/getmaterial",
+                            type : "get",
+                            success : function(data){
+                                console.log(data[0].precio);
+                                $("#id_insumoordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                calcular_total();
+                            }
+                        });
+                    }
+
+                    if(vector[0] == "id_datosdebolsaordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val(    );
+                        if(!valueSelected){
+                            $("#id_datosdebolsaordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_datosdebolsaordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            $("#id_datosdebolsaordendecompra_set-" + vector[1] + "-subtotal").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'id' : valueSelected },
+                            url : "/admin/produccion/getdatosdebolsacosto",
+                            type : "get",
+                            success : function(data){
+                                //console.log(data[0].precio);
+                                $("#id_datosdebolsaordendecompra_set-" + vector[1] + "-cantidad").val(data[0].cantidad);
+                                $("#id_datosdebolsaordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                $("#id_datosdebolsaordendecompra_set-" + vector[1] + "-subtotal").val(data[0].subtotal);
+                                calcular_total();
+                            }
+                        });
+                    }
+
+                    if(vector[0] == "id_revistaordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_revistaordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_revistaordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            $("#id_revistaordendecompra_set-" + vector[1] + "-subtotal").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'id' : valueSelected },
+                            url : "/admin/produccion/getrevistacosto",
+                            type : "get",
+                            success : function(data){
+                                //console.log(data[0].precio);
+                                $("#id_revistaordendecompra_set-" + vector[1] + "-cantidad").val(data[0].cantidad);
+                                $("#id_revistaordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                $("#id_revistaordendecompra_set-" + vector[1] + "-subtotal").val(data[0].subtotal);
+                                calcular_total();
+                            }
+                        });
+                    }
+
+                    if(vector[0] == "id_compuestoordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_compuestoordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_compuestoordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            $("#id_compuestoordendecompra_set-" + vector[1] + "-subtotal").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'id' : valueSelected },
+                            url : "/admin/produccion/getcompuestocosto",
+                            type : "get",
+                            success : function(data){
+                                //console.log(data[0].precio);
+                                $("#id_compuestoordendecompra_set-" + vector[1] + "-cantidad").val(data[0].cantidad);
+                                $("#id_compuestoordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                $("#id_compuestoordendecompra_set-" + vector[1] + "-subtotal").val(data[0].subtotal);
+                                calcular_total();
+                            }
+                        });
+                    }
+
+                    if(vector[0] == "id_plastificadoordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_plastificadoordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_plastificadoordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            $("#id_plastificadoordendecompra_set-" + vector[1] + "-subtotal").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'id' : valueSelected },
+                            url : "/admin/produccion/getplastificadocosto",
+                            type : "get",
+                            success : function(data){
+                                //console.log(data[0].precio);
+                                $("#id_plastificadoordendecompra_set-" + vector[1] + "-cantidad").val(data[0].cantidad);
+                                $("#id_plastificadoordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                $("#id_plastificadoordendecompra_set-" + vector[1] + "-subtotal").val(data[0].subtotal);
+                                calcular_total();
+                            }
+                        });
+                    }
+
+                    if(vector[0] == "id_otrogastoordendecompra_set"){
+                        var optionSelected = $(this).find("option:selected");
+                        var valueSelected  = optionSelected.val();
+                        if(!valueSelected){
+                            $("#id_otrogastoordendecompra_set-" + vector[1] + "-precio_unitario").val("");
+                            $("#id_otrogastoordendecompra_set-" + vector[1] + "-cantidad").val("");
+                            $("#id_otrogastoordendecompra_set-" + vector[1] + "-subtotal").val("");
+                            calcular_total();
+                            return
+                        }
+                        $.ajax({
+                            data : {'id' : valueSelected },
+                            url : "/admin/produccion/getotrogastocosto",
+                            type : "get",
+                            success : function(data){
+                                //console.log(data[0].precio);
+                                $("#id_otrogastoordendecompra_set-" + vector[1] + "-cantidad").val(data[0].cantidad);
+                                $("#id_otrogastoordendecompra_set-" + vector[1] + "-precio_unitario").val(data[0].precio);
+                                $("#id_otrogastoordendecompra_set-" + vector[1] + "-subtotal").val(data[0].subtotal);
+                                calcular_total();
+                            }
+                        });
+                    }
+
+                });
+
+                // calcular totales al editar campos numericos
+                $('.auto').keyup(function(){
+                    calcular_total();
+                });
+
+            {% if adminform and add %}
+                $('form#{{ opts.model_name }}_form :input:visible:enabled:first').focus()
+            {% endif %}
+            });
+
+            setInterval( calcular_total_categoria, 800);
+
+        })(django.jQuery);
+
+        /* 
+            calculo de los totales 
+        */
+        function calcular_total(){
+            var total_general = 0;
+            $('.subtotal_iterable').each(function(){
+                var vector = $(this).attr("id").split("-");
+
+                var cantidad = ($('#'+vector[0]+'-'+vector[1]+'-cantidad').val()!='')?unformat(document.getElementById(vector[0]+'-'+vector[1]+'-cantidad')):'0';
+
+                var precio = ($('#'+vector[0]+'-'+vector[1]+'-precio_unitario').val()!='')?unformat(document.getElementById(vector[0]+'-'+vector[1]+'-precio_unitario')):'0';
+
+                var subtotal = parseFloat(cantidad) * parseFloat(precio)
+
+                if( (cantidad!='0') && (precio!='0') ){
+                    $('#'+vector[0]+'-'+vector[1]+'-subtotal').val( parseFloat(subtotal).toString().replace(".",",") )
+                    format(document.getElementById(vector[0]+'-'+vector[1]+'-subtotal'));
+                } else {
+                    $('#'+vector[0]+'-'+vector[1]+'-subtotal').val('');
+                }
+
+                if($('#'+vector[0]+'-'+vector[1]+'-DELETE').is(':checked')!=true){
+                    total_general += subtotal
+                }
+            });
+
+            $('#id_total').val( parseFloat(total_general).toString().replace(".",",") )
+            format(document.getElementById('id_total'));
+        }
+
+
+
+        function calcular_total_categoria() {
+
+            var total_papel = 0;
+            total_forms = $('#id_papelordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_papelordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_papelordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_papelordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_papel = parseFloat(total_papel) + parseFloat(subtotal)
+                }
+            }
+            $('#id_papelordendecompra_set-total').val( parseFloat(total_papel).toString().replace(".",",") )
+            format(document.getElementById('id_papelordendecompra_set-total'));
+
+
+            var total_preprensa = 0;
+            total_forms = $('#id_preprensaordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_preprensaordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_preprensaordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_preprensaordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_preprensa = parseFloat(total_preprensa) + parseFloat(subtotal)
+                }
+            }
+            $('#id_preprensaordendecompra_set-total').val( parseFloat(total_preprensa).toString().replace(".",",") )
+            format(document.getElementById('id_preprensaordendecompra_set-total'));
+
+
+            var total_troquel = 0;
+            total_forms = $('#id_troquelordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_troquelordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_troquelordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_troquelordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_troquel = parseFloat(total_troquel) + parseFloat(subtotal)
+                }
+            }
+            $('#id_troquelordendecompra_set-total').val( parseFloat(total_troquel).toString().replace(".",",") )
+            format(document.getElementById('id_troquelordendecompra_set-total'));
+
+
+            var total_posprensaservicio = 0;
+            total_forms = $('#id_posprensaservicioordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_posprensaservicioordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_posprensaservicioordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_posprensaservicioordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_posprensaservicio = parseFloat(total_posprensaservicio) + parseFloat(subtotal)
+                }
+            }
+            $('#id_posprensaservicioordendecompra_set-total').val( parseFloat(total_posprensaservicio).toString().replace(".",",") )
+            format(document.getElementById('id_posprensaservicioordendecompra_set-total'));
+
+
+            var total_posprensamaterial = 0;
+            total_forms = $('#id_posprensamaterialordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_posprensamaterialordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_posprensamaterialordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_posprensamaterialordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_posprensamaterial = parseFloat(total_posprensamaterial) + parseFloat(subtotal)
+                }
+            }
+            $('#id_posprensamaterialordendecompra_set-total').val( parseFloat(total_posprensamaterial).toString().replace(".",",") )
+            format(document.getElementById('id_posprensamaterialordendecompra_set-total'));
+
+
+            var total_posprensaotroservicio = 0;
+            total_forms = $('#id_posprensaotroservicioordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_posprensaotroservicioordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_posprensaotroservicioordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_posprensaotroservicioordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_posprensaotroservicio = parseFloat(total_posprensaotroservicio) + parseFloat(subtotal)
+                }
+            }
+            $('#id_posprensaotroservicioordendecompra_set-total').val( parseFloat(total_posprensaotroservicio).toString().replace(".",",") )
+            format(document.getElementById('id_posprensaotroservicioordendecompra_set-total'));
+
+
+            var total_datosdebolsa = 0;
+            total_forms = $('#id_datosdebolsaordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_datosdebolsaordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_datosdebolsaordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_datosdebolsaordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_datosdebolsa = parseFloat(total_datosdebolsa) + parseFloat(subtotal)
+                }
+            }
+            $('#id_datosdebolsaordendecompra_set-total').val( parseFloat(total_datosdebolsa).toString().replace(".",",") )
+            format(document.getElementById('id_datosdebolsaordendecompra_set-total'));
+
+
+            var total_revista = 0;
+            total_forms = $('#id_revistaordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_revistaordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_revistaordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_revistaordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_revista = parseFloat(total_revista) + parseFloat(subtotal)
+                }
+            }
+            $('#id_revistaordendecompra_set-total').val( parseFloat(total_revista).toString().replace(".",",") )
+            format(document.getElementById('id_revistaordendecompra_set-total'));
+
+
+            var total_compuesto = 0;
+            total_forms = $('#id_compuestoordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_compuestoordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_compuestoordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_compuestoordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_compuesto = parseFloat(total_compuesto) + parseFloat(subtotal)
+                }
+            }
+            $('#id_compuestoordendecompra_set-total').val( parseFloat(total_compuesto).toString().replace(".",",") )
+            format(document.getElementById('id_compuestoordendecompra_set-total'));
+
+
+            var total_plastificado = 0;
+            total_forms = $('#id_plastificadoordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_plastificadoordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_plastificadoordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_plastificadoordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_plastificado = parseFloat(total_plastificado) + parseFloat(subtotal)
+                }
+            }
+            $('#id_plastificadoordendecompra_set-total').val( parseFloat(total_plastificado).toString().replace(".",",") )
+            format(document.getElementById('id_plastificadoordendecompra_set-total'));
+
+
+            var total_otrogasto = 0;
+            total_forms = $('#id_otrogastoordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_otrogastoordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_otrogastoordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_otrogastoordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_otrogasto = parseFloat(total_otrogasto) + parseFloat(subtotal)
+                }
+            }
+            $('#id_otrogastoordendecompra_set-total').val( parseFloat(total_otrogasto).toString().replace(".",",") )
+            format(document.getElementById('id_otrogastoordendecompra_set-total'));
+
+            var total_insumo = 0;
+            total_forms = $('#id_insumoordendecompra_set-TOTAL_FORMS').val();
+            for(i=0;i<total_forms;i++){
+                var subtotal = ($('#id_insumoordendecompra_set-'+i+'-subtotal').val()!='')?unformat(document.getElementById('id_insumoordendecompra_set-'+i+'-subtotal')):'0';
+
+                if($('#id_insumoordendecompra_set-'+i+'-DELETE').is(':checked')==false){
+                    total_insumo = parseFloat(total_insumo) + parseFloat(subtotal)
+                }
+            }
+            $('#id_insumoordendecompra_set-total').val( parseFloat(total_insumo).toString().replace(".",",") )
+            format(document.getElementById('id_insumoordendecompra_set-total'));
+        }
+
+
+
+    </script>
+{% endblock %}
+
+{# JavaScript for prepopulated fields #}
+{% prepopulated_fields_js %}
+
+</div>
+</form></div>
+{% endblock %}
